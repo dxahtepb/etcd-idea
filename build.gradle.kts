@@ -31,6 +31,8 @@ val platformType: String by project
 val platformVersion: String by project
 val platformDownloadSources: String by project
 
+val jetcdVersion: String by project
+
 group = pluginGroup
 version = pluginVersion
 
@@ -41,6 +43,9 @@ repositories {
 }
 dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.13.1")
+    implementation("io.etcd:jetcd-core:$jetcdVersion") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
 }
 
 // Configure gradle-intellij-plugin plugin.
@@ -77,6 +82,13 @@ tasks {
         sourceCompatibility = "1.8"
         targetCompatibility = "1.8"
     }
+
+    configure<SourceSetContainer> {
+        named("main") {
+            java.srcDir("src/main/kotlin")
+        }
+    }
+
     listOf("compileKotlin", "compileTestKotlin").forEach {
         getByName<KotlinCompile>(it) {
             kotlinOptions.jvmTarget = "1.8"

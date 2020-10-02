@@ -6,4 +6,10 @@
     <!-- Product and plugin compatibility requirements -->
     <!-- https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Etcd" secondary="true" icon="AllIcons.General.Modified" anchor="bottom"
+                    factoryClass="com.github.dxahtepb.etcdidea.view.BrowserToolWindowFactory"/>
+        <projectService serviceImplementation="com.github.dxahtepb.etcdidea.service.EtcdService" />
+    </extensions>
 </idea-plugin>
