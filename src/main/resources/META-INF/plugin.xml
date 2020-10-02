@@ -1,19 +1,9 @@
 <idea-plugin>
     <id>com.github.dxahtepb.etcdidea</id>
-    <name>etcd-idea</name>
-    <vendor>dxahtepb</vendor>
+    <name>Etcd Browser</name>
+    <vendor url="https://github.com/dxahtepb" email="dxahtepb@gmail.com">Andrey Chausov</vendor>
 
     <!-- Product and plugin compatibility requirements -->
     <!-- https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.dxahtepb.etcdidea.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.dxahtepb.etcdidea.services.MyProjectService"/>
-    </extensions>
-
-    <applicationListeners>
-        <listener class="com.github.dxahtepb.etcdidea.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
-    </applicationListeners>
 </idea-plugin>
