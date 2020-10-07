@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.view;
 
+import com.github.dxahtepb.etcdidea.model.EtcdConnection;
 import com.github.dxahtepb.etcdidea.model.EtcdKvEntries;
 import com.github.dxahtepb.etcdidea.service.EtcdService;
 import com.github.dxahtepb.etcdidea.view.actions.AddKeyAction;
@@ -72,7 +73,7 @@ public class BrowserToolWindow {
     }
 
     public void showAddKeyDialog() {
-        new AddKeyDialogWindow(project, textField.getText()).show();
+        new AddKeyDialogWindow(project, getCurrentConnection()).show();
         updateResults();
     }
 
@@ -82,7 +83,7 @@ public class BrowserToolWindow {
             return;
         }
         String selectedKey = (String) resultTable.getValueAt(selectedRow, 0);
-        etcdService.deleteEntry(textField.getText(), selectedKey);
+        etcdService.deleteEntry(getCurrentConnection(), selectedKey);
         updateResults();
     }
 
@@ -91,7 +92,7 @@ public class BrowserToolWindow {
     }
 
     private void updateResults() {
-        EtcdKvEntries entries = etcdService.listAllEntries(textField.getText());
+        EtcdKvEntries entries = etcdService.listAllEntries(getCurrentConnection());
         resultsModel.setDataVector(entries);
         displayResult(resultTable);
     }
@@ -102,5 +103,9 @@ public class BrowserToolWindow {
         tablePanel.add(new JBScrollPane(tableView));
         tablePanel.validate();
         toolbarPanel.setVisible(true);
+    }
+
+    private EtcdConnection getCurrentConnection() {
+        return new EtcdConnection(textField.getText());
     }
 }
