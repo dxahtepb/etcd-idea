@@ -13,6 +13,6 @@ class DeleteKeyAction(private val myTablePanel: BrowserToolWindow) :
     }
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = myTablePanel.isRowSelected
+        e.presentation.isEnabled = myTablePanel.isRowSelected()
     }
 }

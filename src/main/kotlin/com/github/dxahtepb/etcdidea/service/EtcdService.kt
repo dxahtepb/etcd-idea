@@ -20,6 +20,7 @@ class EtcdService {
         try {
             return Client.builder().endpoints(connection.hosts).build().use(action)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            unwindExceptionStack(e)
             if (!ApplicationManager.getApplication().isUnitTestMode) {
                 Notifications.Bus.notify(
                     Notification(
@@ -60,6 +61,13 @@ class EtcdService {
 
     companion object {
         fun getInstance(project: Project): EtcdService = project.getService(EtcdService::class.java)
+    }
+}
+
+private fun unwindExceptionStack(e: Throwable) {
+    e.cause?.let {
+        println(it)
+        unwindExceptionStack(it)
     }
 }
 
