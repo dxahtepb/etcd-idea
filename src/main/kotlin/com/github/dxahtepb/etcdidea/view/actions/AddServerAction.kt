@@ -9,7 +9,8 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 private typealias Callback = (configuration: EtcdServerConfiguration) -> Unit
 
 class AddServerAction(private val callback: Callback) :
-        AnAction("Add Etcd server", "Add Etcd server", AllIcons.General.Add) {
+    AnAction("Add Etcd server", "Add Etcd server", AllIcons.General.Add) {
+
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 

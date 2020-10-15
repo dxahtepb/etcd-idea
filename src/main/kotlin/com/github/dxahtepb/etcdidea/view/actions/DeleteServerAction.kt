@@ -5,7 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 
 class DeleteServerAction(private val callback: () -> Unit, private val isActive: () -> Boolean) :
-        AnAction("Delete server", "Delete selected server", AllIcons.General.Remove) {
+    AnAction("Delete server", "Delete selected server", AllIcons.General.Remove) {
 
     override fun actionPerformed(e: AnActionEvent) {
         callback()
