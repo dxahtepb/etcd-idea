@@ -11,4 +11,9 @@ class AddKeyAction(private val myTablePanel: BrowserToolWindow) :
     override fun actionPerformed(e: AnActionEvent) {
         myTablePanel.showAddKeyDialog()
     }
+
+    override fun update(e: AnActionEvent) {
+        super.update(e)
+        e.presentation.isEnabled = myTablePanel.isTreeSelected()
+    }
 }

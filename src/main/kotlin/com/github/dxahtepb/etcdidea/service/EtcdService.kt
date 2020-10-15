@@ -1,8 +1,8 @@
 package com.github.dxahtepb.etcdidea.service
 
-import com.github.dxahtepb.etcdidea.model.EtcdConnection
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdKvEntries
+import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
@@ -16,9 +16,9 @@ import java.nio.charset.StandardCharsets
 
 @Suppress("UnstableApiUsage")
 class EtcdService {
-    private fun <T> getConnection(connection: EtcdConnection, action: (client: Client) -> T?): T? {
+    private fun <T> getConnection(serverConfiguration: EtcdServerConfiguration, action: (client: Client) -> T?): T? {
         try {
-            return Client.builder().endpoints(connection.hosts).build().use(action)
+            return Client.builder().endpoints(serverConfiguration.hosts).build().use(action)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             unwindExceptionStack(e)
             if (!ApplicationManager.getApplication().isUnitTestMode) {
@@ -37,9 +37,9 @@ class EtcdService {
         return null
     }
 
-    fun listAllEntries(connection: EtcdConnection): EtcdKvEntries {
+    fun listAllEntries(serverConfiguration: EtcdServerConfiguration): EtcdKvEntries {
         val getOption = GetOption.newBuilder().withRange(ZERO_KEY).build()
-        val keyValues = getConnection(connection) { client ->
+        val keyValues = getConnection(serverConfiguration) { client ->
             client.kvClient.get(ZERO_KEY, getOption)
                 .thenApply { kvClient -> kvClient.kvs.map { EtcdKeyValue(it.getKeyAsString(), it.getValueAsString()) } }
                 .get()
@@ -47,14 +47,14 @@ class EtcdService {
         return EtcdKvEntries(keyValues)
     }
 
-    fun putNewEntry(connection: EtcdConnection, kv: EtcdKeyValue) {
-        getConnection(connection) { client ->
+    fun putNewEntry(serverConfiguration: EtcdServerConfiguration, kv: EtcdKeyValue) {
+        getConnection(serverConfiguration) { client ->
             client.kvClient.put(kv.key.toByteSequence(), kv.value.toByteSequence()).get()
         }
     }
 
-    fun deleteEntry(connection: EtcdConnection, key: String) {
-        getConnection(connection) { client ->
+    fun deleteEntry(serverConfiguration: EtcdServerConfiguration, key: String) {
+        getConnection(serverConfiguration) { client ->
             client.kvClient.delete(key.toByteSequence()).get()
         }
     }

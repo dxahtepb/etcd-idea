@@ -1,7 +1,7 @@
 package com.github.dxahtepb.etcdidea.view
 
-import com.github.dxahtepb.etcdidea.model.EtcdConnection
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
+import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
@@ -13,7 +13,7 @@ import javax.swing.JComponent
 
 private const val TEXT_FIELD_SIZE = 15
 
-class AddKeyDialogWindow(private val project: Project, private val hosts: EtcdConnection) :
+class AddKeyDialogWindow(private val project: Project, private val hosts: EtcdServerConfiguration) :
     DialogWrapper(project, true) {
 
     private var key = "key"

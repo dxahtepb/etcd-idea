@@ -7,7 +7,7 @@ plugins {
     // Java support
     id("java")
     // Kotlin support
-    id("org.jetbrains.kotlin.jvm") version "1.3.70"
+    id("org.jetbrains.kotlin.jvm") version "1.3.72"
     // gradle-intellij-plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
     id("org.jetbrains.intellij") version "0.4.26"
     // gradle-changelog-plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
@@ -16,6 +16,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version "1.13.1"
     // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradle
     id("org.jlleitschuh.gradle.ktlint") version "9.4.0"
+    id("idea")
 }
 
 // Import variables from gradle.properties file
@@ -61,6 +62,12 @@ intellij {
 //  https://www.jetbrains.org/intellij/sdk/docs/basics/plugin_structure/plugin_dependencies.html
 //
 //  setPlugins("java")
+}
+
+idea {
+    module {
+        isDownloadSources = true
+    }
 }
 
 // Configure detekt plugin.

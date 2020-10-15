@@ -1,30 +1,37 @@
 package com.github.dxahtepb.etcdidea.view
 
-import com.github.dxahtepb.etcdidea.EtcdBundle
-import com.github.dxahtepb.etcdidea.model.EtcdConnection
+import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.view.actions.AddKeyAction
+import com.github.dxahtepb.etcdidea.view.actions.AddServerAction
 import com.github.dxahtepb.etcdidea.view.actions.DeleteKeyAction
+import com.github.dxahtepb.etcdidea.view.actions.DeleteServerAction
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbarPosition
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AnActionButton
+import com.intellij.ui.DoubleClickListener
+import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ToolbarDecorator
-import com.intellij.ui.components.JBTextField
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
-import com.intellij.uiDesigner.core.GridConstraints
-import com.intellij.uiDesigner.core.GridLayoutManager
+import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
-import java.awt.Dimension
-import javax.swing.JButton
+import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.JTree
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.MutableTreeNode
+import javax.swing.tree.TreePath
+import javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION
 
 class BrowserToolWindow(private val project: Project, private val etcdService: EtcdService) {
-    @Suppress("MagicNumber")
-    private val hostTextFieldSize = Dimension(353, 30)
-    private val hostTextFieldDefaultText = "http://192.168.99.100:2379"
-    private lateinit var hostTextField: JBTextField
+    private lateinit var treeModel: DefaultTreeModel
+    private lateinit var myTree: Tree
 
     private lateinit var resultsModel: EtcdTableModel
     private lateinit var resultTable: JBTable
@@ -34,22 +41,67 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
     init {
         rootPanel = JPanel(BorderLayout()).apply {
             add(createToolbarPanel(), BorderLayout.NORTH)
-            add(createTablePanel(), BorderLayout.CENTER)
+            val splitterBorder = JBUI.Borders.customLine(JBUI.CurrentTheme.ToolWindow.borderColor(), 1, 0, 0, 0)
+            add(
+                OnePixelSplitter(true, 0.6f).apply {
+                    firstComponent = createTreePanel()
+                    secondComponent = createTablePanel().apply {
+                        border = splitterBorder
+                    }
+                },
+                BorderLayout.CENTER
+            )
         }
     }
 
     fun getContent(): JComponent = rootPanel
 
     private fun createToolbarPanel(): JComponent {
-        hostTextField = JBTextField(hostTextFieldDefaultText).apply { preferredSize = hostTextFieldSize }
-        return JPanel(GridLayoutManager(1, 2)).apply {
-            add(hostTextField, GridConstraints())
+        val actionGroup = DefaultActionGroup("BrowserActionGroup", false).apply {
+            add(AddServerAction(::insertNewConfiguration))
+            add(DeleteServerAction(::deleteSelectedConfiguration, ::isTreeSelected))
+        }
+        val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
+        return JPanel(BorderLayout()).apply {
+            add(actionToolbar.component, BorderLayout.CENTER)
+        }
+    }
+
+    private fun createTreePanel(): JComponent {
+        treeModel = DefaultTreeModel(DefaultMutableTreeNode())
+        myTree = Tree(treeModel).apply {
+            isEditable = true
+            isRootVisible = false
+            emptyText.text = "Add server configuration"
+            selectionModel.selectionMode = SINGLE_TREE_SELECTION
+        }
+
+        object : DoubleClickListener() {
+            override fun onDoubleClick(event: MouseEvent): Boolean {
+                if (event.source !is JTree || !isTreeSelected()) return false
+                updateResults()
+                return true
+            }
+        }.installOn(myTree)
+
+        return JPanel(BorderLayout()).apply {
             add(
-                JButton(EtcdBundle.getMessage("browser.toolwindow.button.list"))
-                    .apply { addActionListener { updateResults() } },
-                GridConstraints().apply { column = 1 }
+                JBScrollPane(myTree).apply { border = JBUI.Borders.empty() },
+                BorderLayout.CENTER
             )
         }
+    }
+
+    private fun insertNewConfiguration(configuration: EtcdServerConfiguration) {
+        val childNode = DefaultMutableTreeNode(configuration, false)
+        val root = treeModel.root as DefaultMutableTreeNode
+        treeModel.insertNodeInto(childNode, root, root.childCount)
+        myTree.scrollPathToVisible(TreePath(childNode.path))
+    }
+
+    private fun deleteSelectedConfiguration() {
+        val nodeToRemove = myTree.selectionPath?.lastPathComponent as? MutableTreeNode ?: return
+        treeModel.removeNodeFromParent(nodeToRemove)
     }
 
     private fun createTablePanel(): JComponent {
@@ -89,5 +141,10 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
 
     fun isRowSelected() = resultTable.selectedRow != -1
 
-    private fun getCurrentConnection() = EtcdConnection(hostTextField.text)
+    fun isTreeSelected() = myTree.selectionCount != 0
+
+    private fun getCurrentConnection(): EtcdServerConfiguration {
+        val node = myTree.selectionPath?.lastPathComponent as DefaultMutableTreeNode
+        return node.userObject as EtcdServerConfiguration
+    }
 }
