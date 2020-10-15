@@ -13,25 +13,32 @@ import io.etcd.jetcd.Client
 import io.etcd.jetcd.KeyValue
 import io.etcd.jetcd.options.GetOption
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ExecutionException
 
 @Suppress("UnstableApiUsage")
 class EtcdService {
     private fun <T> getConnection(serverConfiguration: EtcdServerConfiguration, action: (client: Client) -> T?): T? {
         try {
-            return Client.builder().endpoints(serverConfiguration.hosts).build().use(action)
+            val builder = Client.builder()
+            builder.endpoints(serverConfiguration.hosts)
+            if (serverConfiguration.user.isNotEmpty() && serverConfiguration.password.isNotEmpty()) {
+                builder.user(serverConfiguration.user.toByteSequence())
+                    .password(serverConfiguration.password.toByteSequence())
+            }
+            return builder.build().use(action)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            unwindExceptionStack(e)
+            val cause = getCause(e)
             if (!ApplicationManager.getApplication().isUnitTestMode) {
                 Notifications.Bus.notify(
                     Notification(
                         "Etcd Browser",
                         "Etcd error",
-                        e.message ?: "Unknown error",
+                        cause.message ?: "Unknown error",
                         NotificationType.ERROR
                     )
                 )
             } else {
-                throw e
+                throw cause
             }
         }
         return null
@@ -64,12 +71,7 @@ class EtcdService {
     }
 }
 
-private fun unwindExceptionStack(e: Throwable) {
-    e.cause?.let {
-        println(it)
-        unwindExceptionStack(it)
-    }
-}
+private fun getCause(e: Throwable) = if (e is ExecutionException) e.cause ?: e else e
 
 private val ZERO_KEY: ByteSequence = ByteSequence.from(byteArrayOf(0.toByte()))
 private fun KeyValue.getKeyAsString() = this.key.toString(StandardCharsets.UTF_8)
