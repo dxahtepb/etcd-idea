@@ -14,6 +14,7 @@ import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.ListSelectionModel
 
 class EtcdEditorPanel(
     private val project: Project,
@@ -41,6 +42,7 @@ class EtcdEditorPanel(
             tableHeader.reorderingAllowed = false
             columnSelectionAllowed = false
         }
+        resultTable.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         val resultTableDecorator = ToolbarDecorator.createDecorator(resultTable)
             .setToolbarPosition(ActionToolbarPosition.TOP)
             .setPanelBorder(JBUI.Borders.empty()).setScrollPaneBorder(JBUI.Borders.empty())

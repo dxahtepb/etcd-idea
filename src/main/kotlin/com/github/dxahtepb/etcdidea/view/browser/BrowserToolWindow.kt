@@ -20,6 +20,7 @@ import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JTree
+import javax.swing.ListSelectionModel
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.MutableTreeNode
@@ -117,6 +118,7 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
             tableHeader.reorderingAllowed = false
             columnSelectionAllowed = false
         }
+        statsTable.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         return JPanel(BorderLayout()).apply {
             add(JBScrollPane(statsTable).withNoBorder(), BorderLayout.CENTER)
         }
