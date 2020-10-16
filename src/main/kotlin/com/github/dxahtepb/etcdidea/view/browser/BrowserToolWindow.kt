@@ -67,7 +67,7 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
     private fun createTreePanel(): JComponent {
         treeModel = DefaultTreeModel(DefaultMutableTreeNode())
         myTree = Tree(treeModel).apply {
-            isEditable = true
+            isEditable = false
             isRootVisible = false
             emptyText.text = "Add server configuration"
             selectionModel.selectionMode = SINGLE_TREE_SELECTION
