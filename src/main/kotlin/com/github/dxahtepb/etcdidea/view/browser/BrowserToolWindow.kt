@@ -30,8 +30,8 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
     private lateinit var treeModel: DefaultTreeModel
     private lateinit var myTree: Tree
 
-    private lateinit var resultsModel: EtcdTableModel
-    private lateinit var resultTable: JBTable
+    private lateinit var statsModel: EtcdStatusTableModel
+    private lateinit var statsTable: JBTable
 
     private val rootPanel: JPanel
 
@@ -74,19 +74,27 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
         }
 
         object : DoubleClickListener() {
+            @SuppressWarnings("ReturnCount")
             override fun onDoubleClick(event: MouseEvent): Boolean {
                 if (event.source !is JTree || !isTreeSelected()) return false
+                val configuration = getCurrentConnection() ?: return false
                 FileEditorManager.getInstance(project)
-                    .openFile(EtcdDummyVirtualFile(getCurrentConnection()), true)
+                    .openFile(EtcdDummyVirtualFile(configuration), true)
                 return true
             }
         }.installOn(myTree)
 
+        myTree.selectionModel.addTreeSelectionListener {
+            val selectedConfiguration = getCurrentConnection()
+            if (selectedConfiguration != null) {
+                updateStatsTable(selectedConfiguration)
+            } else {
+                clearStatsTable()
+            }
+        }
+
         return JPanel(BorderLayout()).apply {
-            add(
-                JBScrollPane(myTree).apply { border = JBUI.Borders.empty() },
-                BorderLayout.CENTER
-            )
+            add(JBScrollPane(myTree).withNoBorder(), BorderLayout.CENTER)
         }
     }
 
@@ -103,21 +111,35 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
     }
 
     private fun createTablePanel(): JComponent {
-        resultsModel = EtcdTableModel()
-        resultTable = JBTable(resultsModel).apply {
+        statsModel = EtcdStatusTableModel()
+        statsTable = JBTable(statsModel).apply {
             dragEnabled = false
             tableHeader.reorderingAllowed = false
             columnSelectionAllowed = false
         }
         return JPanel(BorderLayout()).apply {
-            add(resultTable, BorderLayout.CENTER)
+            add(JBScrollPane(statsTable).withNoBorder(), BorderLayout.CENTER)
+        }
+    }
+
+    private fun updateStatsTable(configuration: EtcdServerConfiguration) {
+        etcdService.getMemberStatus(configuration)?.let {
+            statsModel.setDataVector(it)
+        }
+    }
+
+    private fun clearStatsTable() {
+        if (this::statsModel.isInitialized) {
+            statsModel.clear()
         }
     }
 
     fun isTreeSelected() = myTree.selectionCount != 0
 
-    private fun getCurrentConnection(): EtcdServerConfiguration {
-        val node = myTree.selectionPath?.lastPathComponent as DefaultMutableTreeNode
-        return node.userObject as EtcdServerConfiguration
+    private fun getCurrentConnection(): EtcdServerConfiguration? {
+        val node = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode
+        return node?.userObject as? EtcdServerConfiguration
     }
 }
+
+private fun JComponent.withNoBorder() = this.apply { border = JBUI.Borders.empty() }

@@ -5,7 +5,6 @@ import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.view.actions.AddKeyAction
 import com.github.dxahtepb.etcdidea.view.actions.DeleteKeyAction
 import com.github.dxahtepb.etcdidea.view.browser.AddKeyDialogWindow
-import com.github.dxahtepb.etcdidea.view.browser.EtcdTableModel
 import com.intellij.openapi.actionSystem.ActionToolbarPosition
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AnActionButton

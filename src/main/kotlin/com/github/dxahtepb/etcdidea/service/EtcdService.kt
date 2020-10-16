@@ -2,6 +2,7 @@ package com.github.dxahtepb.etcdidea.service
 
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdKvEntries
+import com.github.dxahtepb.etcdidea.model.EtcdMemberStatus
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
@@ -12,6 +13,7 @@ import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
 import io.etcd.jetcd.KeyValue
 import io.etcd.jetcd.options.GetOption
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.ExecutionException
 
@@ -63,6 +65,14 @@ class EtcdService {
     fun deleteEntry(serverConfiguration: EtcdServerConfiguration, key: String) {
         getConnection(serverConfiguration) { client ->
             client.kvClient.delete(key.toByteSequence()).get()
+        }
+    }
+
+    fun getMemberStatus(serverConfiguration: EtcdServerConfiguration): EtcdMemberStatus? {
+        return getConnection(serverConfiguration) { client: Client ->
+            client.maintenanceClient.statusMember(URI(serverConfiguration.hosts))
+                .thenApply { EtcdMemberStatus.fromResponse(it) }
+                .get()
         }
     }
 
