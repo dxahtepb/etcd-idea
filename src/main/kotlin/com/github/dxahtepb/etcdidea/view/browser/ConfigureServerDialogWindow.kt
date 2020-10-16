@@ -1,4 +1,4 @@
-package com.github.dxahtepb.etcdidea.view
+package com.github.dxahtepb.etcdidea.view.browser
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.intellij.openapi.project.Project

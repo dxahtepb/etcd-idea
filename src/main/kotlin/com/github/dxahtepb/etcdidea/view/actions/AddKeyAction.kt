@@ -1,6 +1,6 @@
 package com.github.dxahtepb.etcdidea.view.actions
 
-import com.github.dxahtepb.etcdidea.view.BrowserToolWindow
+import com.github.dxahtepb.etcdidea.view.browser.BrowserToolWindow
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent

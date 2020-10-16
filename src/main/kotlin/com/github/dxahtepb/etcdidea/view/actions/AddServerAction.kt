@@ -1,7 +1,7 @@
 package com.github.dxahtepb.etcdidea.view.actions
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
-import com.github.dxahtepb.etcdidea.view.ConfigureServerDialogWindow
+import com.github.dxahtepb.etcdidea.view.browser.ConfigureServerDialogWindow
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent

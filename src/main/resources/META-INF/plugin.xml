@@ -9,7 +9,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Etcd" icon="/icons/etcd.png" anchor="right"
-                    factoryClass="com.github.dxahtepb.etcdidea.view.BrowserToolWindowFactory"/>
+                    factoryClass="com.github.dxahtepb.etcdidea.view.browser.BrowserToolWindowFactory"/>
         <projectService serviceImplementation="com.github.dxahtepb.etcdidea.service.EtcdService" />
     </extensions>
 </idea-plugin>
