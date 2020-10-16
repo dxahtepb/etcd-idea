@@ -2,18 +2,15 @@ package com.github.dxahtepb.etcdidea.view.browser
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
-import com.github.dxahtepb.etcdidea.view.actions.AddKeyAction
+import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
 import com.github.dxahtepb.etcdidea.view.actions.AddServerAction
-import com.github.dxahtepb.etcdidea.view.actions.DeleteKeyAction
 import com.github.dxahtepb.etcdidea.view.actions.DeleteServerAction
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionToolbarPosition
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.ui.AnActionButton
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.OnePixelSplitter
-import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.ui.treeStructure.Tree
@@ -79,7 +76,8 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
         object : DoubleClickListener() {
             override fun onDoubleClick(event: MouseEvent): Boolean {
                 if (event.source !is JTree || !isTreeSelected()) return false
-                updateResults()
+                FileEditorManager.getInstance(project)
+                    .openFile(EtcdDummyVirtualFile(getCurrentConnection()), true)
                 return true
             }
         }.installOn(myTree)
@@ -111,35 +109,10 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
             tableHeader.reorderingAllowed = false
             columnSelectionAllowed = false
         }
-        val resultTableDecorator = ToolbarDecorator.createDecorator(resultTable)
-            .setToolbarPosition(ActionToolbarPosition.TOP)
-            .setPanelBorder(JBUI.Borders.empty()).setScrollPaneBorder(JBUI.Borders.empty())
-            .addExtraAction(AnActionButton.fromAction(AddKeyAction(this)))
-            .addExtraAction(AnActionButton.fromAction(DeleteKeyAction(this)))
         return JPanel(BorderLayout()).apply {
-            add(resultTableDecorator.createPanel(), BorderLayout.CENTER)
+            add(resultTable, BorderLayout.CENTER)
         }
     }
-
-    fun showAddKeyDialog() {
-        AddKeyDialogWindow(project, getCurrentConnection()).show()
-        updateResults()
-    }
-
-    fun deleteSelectedKey() {
-        val selectedRow = resultTable.selectedRow
-        if (selectedRow < 0) return
-        val selectedKey = resultTable.getValueAt(selectedRow, 0) as String
-        etcdService.deleteEntry(getCurrentConnection(), selectedKey)
-        updateResults()
-    }
-
-    private fun updateResults() {
-        val entries = etcdService.listAllEntries(getCurrentConnection())
-        resultsModel.setDataVector(entries)
-    }
-
-    fun isRowSelected() = resultTable.selectedRow != -1
 
     fun isTreeSelected() = myTree.selectionCount != 0
 

@@ -11,5 +11,8 @@
         <toolWindow id="Etcd" icon="/icons/etcd.png" anchor="right"
                     factoryClass="com.github.dxahtepb.etcdidea.view.browser.BrowserToolWindowFactory"/>
         <projectService serviceImplementation="com.github.dxahtepb.etcdidea.service.EtcdService" />
+        <virtualFileSystem key="etcd" physical="false"
+                           implementationClass="com.github.dxahtepb.etcdidea.vfs.EtcdDummyFileSystem"/>
+        <fileEditorProvider implementation="com.github.dxahtepb.etcdidea.view.editor.EtcdEditorProvider"/>
     </extensions>
 </idea-plugin>
