@@ -19,7 +19,7 @@ class EtcdStatusTableModel : DefaultTableModel() {
     }
 
     fun clear() {
-        setDataVector(Vector(), COLUMNS)
+        setDataVector(Vector<Vector<String>>(), COLUMNS)
     }
 
     override fun isCellEditable(row: Int, column: Int) = false
