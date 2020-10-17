@@ -1,4 +1,4 @@
-package com.github.dxahtepb.etcdidea.view.browser
+package com.github.dxahtepb.etcdidea.view.editor
 
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
