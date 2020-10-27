@@ -6,6 +6,7 @@ import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.view.actions.AddKeyAction
 import com.github.dxahtepb.etcdidea.view.actions.DeleteKeyAction
 import com.github.dxahtepb.etcdidea.view.actions.EditKeyAction
+import com.github.dxahtepb.etcdidea.view.actions.RefreshTableAction
 import com.intellij.openapi.actionSystem.ActionToolbarPosition
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AnActionButton
@@ -50,6 +51,7 @@ class EtcdEditorPanel(
             .addExtraAction(AnActionButton.fromAction(AddKeyAction(this)))
             .addExtraAction(AnActionButton.fromAction(DeleteKeyAction(this)))
             .addExtraAction(AnActionButton.fromAction(EditKeyAction(this)))
+            .addExtraAction(AnActionButton.fromAction(RefreshTableAction(this)))
         return JPanel(BorderLayout()).apply {
             add(resultTableDecorator.createPanel(), BorderLayout.CENTER)
         }
@@ -74,7 +76,7 @@ class EtcdEditorPanel(
         updateResults()
     }
 
-    private fun updateResults() {
+    fun updateResults() {
         val entries = etcdService.listAllEntries(configuration)
         resultsModel.setDataVector(entries)
     }
