@@ -1,9 +1,11 @@
 package com.github.dxahtepb.etcdidea.view.editor
 
+import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.view.actions.AddKeyAction
 import com.github.dxahtepb.etcdidea.view.actions.DeleteKeyAction
+import com.github.dxahtepb.etcdidea.view.actions.EditKeyAction
 import com.intellij.openapi.actionSystem.ActionToolbarPosition
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AnActionButton
@@ -47,6 +49,7 @@ class EtcdEditorPanel(
             .setPanelBorder(JBUI.Borders.empty()).setScrollPaneBorder(JBUI.Borders.empty())
             .addExtraAction(AnActionButton.fromAction(AddKeyAction(this)))
             .addExtraAction(AnActionButton.fromAction(DeleteKeyAction(this)))
+            .addExtraAction(AnActionButton.fromAction(EditKeyAction(this)))
         return JPanel(BorderLayout()).apply {
             add(resultTableDecorator.createPanel(), BorderLayout.CENTER)
         }
@@ -57,11 +60,17 @@ class EtcdEditorPanel(
         updateResults()
     }
 
+    fun showEditKeyDialog() {
+        val selectedRow = resultTable.selectedRow
+        if (selectedRow < 0) return
+        EditKeyDialogWindow(project, configuration, resultTable.getEtcdKv(selectedRow)).show()
+        updateResults()
+    }
+
     fun deleteSelectedKey() {
         val selectedRow = resultTable.selectedRow
         if (selectedRow < 0) return
-        val selectedKey = resultTable.getValueAt(selectedRow, 0) as String
-        etcdService.deleteEntry(configuration, selectedKey)
+        etcdService.deleteEntry(configuration, resultTable.getEtcdKv(selectedRow).key)
         updateResults()
     }
 
@@ -72,3 +81,8 @@ class EtcdEditorPanel(
 
     fun isRowSelected() = resultTable.selectedRow != -1
 }
+
+private fun JBTable.getEtcdKv(row: Int) = EtcdKeyValue(
+    this.getValueAt(row, 0) as String,
+    this.getValueAt(row, 1) as String
+)

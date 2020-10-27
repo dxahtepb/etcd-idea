@@ -13,18 +13,19 @@ import javax.swing.JComponent
 
 private const val TEXT_FIELD_SIZE = 15
 
-class AddKeyDialogWindow(
+class EditKeyDialogWindow(
     private val project: Project,
-    private val hosts: EtcdServerConfiguration
+    private val hosts: EtcdServerConfiguration,
+    keyValue: EtcdKeyValue
 ) : DialogWrapper(project, true) {
 
-    private var key = "key"
-    private var value = "value"
+    private var key = keyValue.key
+    private var value = keyValue.value
     private lateinit var dialogPanel: DialogPanel
     private lateinit var keyField: JBTextField
 
     init {
-        title = "Add Key"
+        title = "Edit Key"
         setOKButtonText("Submit")
         super.init()
     }
@@ -36,6 +37,8 @@ class AddKeyDialogWindow(
                 textField(::value, TEXT_FIELD_SIZE)
             }
         }
+        keyField.isEnabled = false
+        keyField.isEditable = false
         return dialogPanel
     }
 
