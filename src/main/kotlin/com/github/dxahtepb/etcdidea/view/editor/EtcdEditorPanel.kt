@@ -3,10 +3,10 @@ package com.github.dxahtepb.etcdidea.view.editor
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
-import com.github.dxahtepb.etcdidea.view.actions.AddKeyAction
-import com.github.dxahtepb.etcdidea.view.actions.DeleteKeyAction
-import com.github.dxahtepb.etcdidea.view.actions.EditKeyAction
-import com.github.dxahtepb.etcdidea.view.actions.RefreshTableAction
+import com.github.dxahtepb.etcdidea.view.editor.actions.AddKeyAction
+import com.github.dxahtepb.etcdidea.view.editor.actions.DeleteKeyAction
+import com.github.dxahtepb.etcdidea.view.editor.actions.EditKeyAction
+import com.github.dxahtepb.etcdidea.view.editor.actions.RefreshTableAction
 import com.intellij.openapi.actionSystem.ActionToolbarPosition
 import com.intellij.openapi.project.Project
 import com.intellij.ui.AnActionButton

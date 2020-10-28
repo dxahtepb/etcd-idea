@@ -1,4 +1,4 @@
-package com.github.dxahtepb.etcdidea.view.actions
+package com.github.dxahtepb.etcdidea.view.browser.actions
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.view.browser.ConfigureServerDialogWindow

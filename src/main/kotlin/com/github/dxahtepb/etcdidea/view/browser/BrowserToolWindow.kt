@@ -3,8 +3,8 @@ package com.github.dxahtepb.etcdidea.view.browser
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
-import com.github.dxahtepb.etcdidea.view.actions.AddServerAction
-import com.github.dxahtepb.etcdidea.view.actions.DeleteServerAction
+import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
+import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.fileEditor.FileEditorManager

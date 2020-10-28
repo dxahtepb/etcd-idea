@@ -1,4 +1,4 @@
-package com.github.dxahtepb.etcdidea.view.actions
+package com.github.dxahtepb.etcdidea.view.browser.actions
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction

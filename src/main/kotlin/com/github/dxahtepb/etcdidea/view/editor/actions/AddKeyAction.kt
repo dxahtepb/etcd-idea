@@ -1,4 +1,4 @@
-package com.github.dxahtepb.etcdidea.view.actions
+package com.github.dxahtepb.etcdidea.view.editor.actions
 
 import com.github.dxahtepb.etcdidea.view.editor.EtcdEditorPanel
 import com.intellij.icons.AllIcons
