@@ -2,74 +2,69 @@ package com.github.dxahtepb.etcdidea.service
 
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdKvEntries
+import com.github.dxahtepb.etcdidea.model.EtcdKvRevisions
 import com.github.dxahtepb.etcdidea.model.EtcdMemberStatus
+import com.github.dxahtepb.etcdidea.model.EtcdRevisionInfo
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
-import io.etcd.jetcd.KeyValue
 import io.etcd.jetcd.options.GetOption
+import io.etcd.jetcd.options.WatchOption
+import io.etcd.jetcd.watch.WatchResponse
 import java.net.URI
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.ExecutionException
 
 @Suppress("UnstableApiUsage")
 class EtcdService {
-    private fun <T> getConnection(serverConfiguration: EtcdServerConfiguration, action: (client: Client) -> T?): T? {
-        try {
-            val builder = Client.builder()
-            builder.endpoints(serverConfiguration.hosts)
-            if (serverConfiguration.user.isNotEmpty() && serverConfiguration.password.isNotEmpty()) {
-                builder.user(serverConfiguration.user.toByteSequence())
-                    .password(serverConfiguration.password.toByteSequence())
-            }
-            return builder.build().use(action)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            val cause = getCause(e)
-            if (!ApplicationManager.getApplication().isUnitTestMode) {
-                Notifications.Bus.notify(
-                    Notification(
-                        "Etcd Browser",
-                        "Etcd error",
-                        cause.message ?: "Unknown error",
-                        NotificationType.ERROR
-                    )
-                )
-            } else {
-                throw cause
-            }
-        }
-        return null
-    }
 
     fun listAllEntries(serverConfiguration: EtcdServerConfiguration): EtcdKvEntries {
         val getOption = GetOption.newBuilder().withRange(ZERO_KEY).build()
-        val keyValues = getConnection(serverConfiguration) { client ->
+        val keyValues = serverConfiguration.useConnection { client ->
             client.kvClient.get(ZERO_KEY, getOption)
-                .thenApply { kvClient -> kvClient.kvs.map { EtcdKeyValue(it.getKeyAsString(), it.getValueAsString()) } }
+                .thenApply { kvClient -> kvClient.kvs.map { EtcdKeyValue.fromKeyValue(it) } }
                 .get()
         } ?: emptyList()
         return EtcdKvEntries(keyValues)
     }
 
     fun putNewEntry(serverConfiguration: EtcdServerConfiguration, kv: EtcdKeyValue) {
-        getConnection(serverConfiguration) { client ->
+        serverConfiguration.useConnection { client ->
             client.kvClient.put(kv.key.toByteSequence(), kv.value.toByteSequence()).get()
         }
     }
 
     fun deleteEntry(serverConfiguration: EtcdServerConfiguration, key: String) {
-        getConnection(serverConfiguration) { client ->
+        serverConfiguration.useConnection { client ->
             client.kvClient.delete(key.toByteSequence()).get()
         }
     }
 
+    fun getRevisions(
+        serverConfiguration: EtcdServerConfiguration,
+        key: String,
+        callback: (EtcdKvRevisions) -> Unit
+    ): EtcdWatcherHolder {
+        val watchOptions = WatchOption.newBuilder().withRevision(1).build()
+        val connection = EtcdConnectionHolder(serverConfiguration)
+        val watcher = connection.execute(
+            notificationErrorSink { client ->
+                val onNext = { watchResponse: WatchResponse ->
+                    val events = mutableListOf<EtcdRevisionInfo>()
+                    watchResponse.events.forEach {
+                        events.add(EtcdRevisionInfo.fromWatchEvent(it))
+                    }
+                    callback(EtcdKvRevisions(events))
+                }
+                val onError = notificationErrorSink
+                client.watchClient.watch(key.toByteSequence(), watchOptions, onNext, onError)
+            }
+        )
+        return EtcdWatcherHolder(watcher, connection)
+    }
+
     fun getMemberStatus(serverConfiguration: EtcdServerConfiguration): EtcdMemberStatus? {
-        return getConnection(serverConfiguration) { client: Client ->
+        return serverConfiguration.useConnection { client: Client ->
             client.maintenanceClient.statusMember(URI(serverConfiguration.hosts))
                 .thenApply { EtcdMemberStatus.fromResponse(it) }
                 .get()
@@ -81,9 +76,10 @@ class EtcdService {
     }
 }
 
-private fun getCause(e: Throwable) = if (e is ExecutionException) e.cause ?: e else e
+private fun <T> EtcdServerConfiguration.useConnection(action: (client: Client) -> T?): T? {
+    val connection = EtcdConnectionHolder(this)
+    return connection.use { it.execute(action.withNotificationErrorSink()) }
+}
 
 private val ZERO_KEY: ByteSequence = ByteSequence.from(byteArrayOf(0.toByte()))
-private fun KeyValue.getKeyAsString() = this.key.toString(StandardCharsets.UTF_8)
-private fun KeyValue.getValueAsString() = this.value.toString(StandardCharsets.UTF_8)
-private fun String.toByteSequence() = ByteSequence.from(this, StandardCharsets.UTF_8)
+internal fun String.toByteSequence() = ByteSequence.from(this, StandardCharsets.UTF_8)
