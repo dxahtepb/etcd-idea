@@ -49,7 +49,7 @@ class EtcdService {
         callback: (EtcdKvRevisions) -> Unit
     ): EtcdWatcherHolder? {
         val revision = executeWithErrorSink(notificationErrorSink) {
-            getLeastAvailableRevision(serverConfiguration, key).get()
+            getLeastAvailableRevision(serverConfiguration, key).get(1, TimeUnit.SECONDS)
         } ?: return null
         val watchOptions = WatchOption.newBuilder().withRevision(revision).build()
         val connection = EtcdConnectionHolder(serverConfiguration)
@@ -73,7 +73,7 @@ class EtcdService {
         serverConfiguration: EtcdServerConfiguration,
         key: String
     ): CompletableFuture<Long> {
-        var revision = 5L
+        var revision = 1L
         val future = CompletableFuture<Long>()
         val watchOptions = WatchOption.newBuilder()
             .withRevision(revision)
@@ -99,13 +99,12 @@ class EtcdService {
                 EtcdWatcherHolder(watcher, connection, 1)
             }
         )
-        future.orTimeout(1, TimeUnit.SECONDS)
-            .thenRun {
-                watcherHolder?.close()
-            }.exceptionally {
-                watcherHolder?.close()
-                throw it
-            }
+        future.thenRun {
+            watcherHolder?.close()
+        }.exceptionally {
+            watcherHolder?.close()
+            throw it
+        }
         return future
     }
 
