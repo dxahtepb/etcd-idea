@@ -120,7 +120,7 @@ class EditKeyDialogWindow(
     }
 }
 
-private class RevisionsTableModel : DefaultTableModel(Vector(), columnNames) {
+private class RevisionsTableModel : DefaultTableModel(Vector<Vector<String>>(), columnNames) {
     private companion object {
         private val columnsModel = listOf(
             ColumnDescriptor("Value") { rev -> rev.kv.value },
