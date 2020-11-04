@@ -9,11 +9,14 @@ import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.intellij.openapi.project.Project
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
+import io.etcd.jetcd.common.exception.CompactedException
 import io.etcd.jetcd.options.GetOption
 import io.etcd.jetcd.options.WatchOption
 import io.etcd.jetcd.watch.WatchResponse
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 @Suppress("UnstableApiUsage")
 class EtcdService {
@@ -44,8 +47,11 @@ class EtcdService {
         serverConfiguration: EtcdServerConfiguration,
         key: String,
         callback: (EtcdKvRevisions) -> Unit
-    ): EtcdWatcherHolder {
-        val watchOptions = WatchOption.newBuilder().withRevision(1).build()
+    ): EtcdWatcherHolder? {
+        val revision = executeWithErrorSink(notificationErrorSink) {
+            getLeastAvailableRevision(serverConfiguration, key).get()
+        } ?: return null
+        val watchOptions = WatchOption.newBuilder().withRevision(revision).build()
         val connection = EtcdConnectionHolder(serverConfiguration)
         val watcher = connection.execute(
             notificationErrorSink { client ->
@@ -60,7 +66,47 @@ class EtcdService {
                 client.watchClient.watch(key.toByteSequence(), watchOptions, onNext, onError)
             }
         )
-        return EtcdWatcherHolder(watcher, connection)
+        return EtcdWatcherHolder(watcher, connection, revision)
+    }
+
+    private fun getLeastAvailableRevision(
+        serverConfiguration: EtcdServerConfiguration,
+        key: String
+    ): CompletableFuture<Long> {
+        var revision = 5L
+        val future = CompletableFuture<Long>()
+        val watchOptions = WatchOption.newBuilder()
+            .withRevision(revision)
+            .withProgressNotify(true)
+            .build()
+        val connection = EtcdConnectionHolder(serverConfiguration)
+        val watcherHolder = connection.execute(
+            notificationErrorSink { client ->
+                val onError = { e: Throwable ->
+                    if (e is CompactedException) {
+                        revision = e.compactedRevision
+                        future.complete(revision)
+                        Unit
+                    } else {
+                        throw e
+                    }
+                }
+                val onNext: (_: WatchResponse) -> Unit = {
+                    future.complete(revision)
+                    Unit
+                }
+                val watcher = client.watchClient.watch(key.toByteSequence(), watchOptions, onNext, onError)
+                EtcdWatcherHolder(watcher, connection, 1)
+            }
+        )
+        future.orTimeout(1, TimeUnit.SECONDS)
+            .thenRun {
+                watcherHolder?.close()
+            }.exceptionally {
+                watcherHolder?.close()
+                throw it
+            }
+        return future
     }
 
     fun getMemberStatus(serverConfiguration: EtcdServerConfiguration): EtcdMemberStatus? {

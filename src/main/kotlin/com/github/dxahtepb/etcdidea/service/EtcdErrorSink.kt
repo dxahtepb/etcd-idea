@@ -24,6 +24,15 @@ internal fun <T> ((Client) -> T?).withErrorSink(sink: (Exception) -> Unit): (Cli
     }
 }
 
+internal fun <V> executeWithErrorSink(sink: (Exception) -> Unit, action: () -> V?): V? {
+    try {
+        return action()
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        sink(e)
+    }
+    return null
+}
+
 internal val notificationErrorSink = { e: Throwable ->
     val cause = getCause(e)
     if (!ApplicationManager.getApplication().isUnitTestMode) {
@@ -31,7 +40,7 @@ internal val notificationErrorSink = { e: Throwable ->
             Notification(
                 "Etcd Browser",
                 "Etcd error",
-                cause.message ?: "Unknown error",
+                cause.message ?: "${e.message}: Unknown error",
                 NotificationType.ERROR
             )
         )

@@ -40,6 +40,7 @@ class EditKeyDialogWindow(
     private lateinit var keyField: JBTextField
     private lateinit var valueField: JBTextField
     private lateinit var revisionsTableModel: RevisionsTableModel
+    private lateinit var startRevisionLabel: JBLabel
 
     init {
         title = "Edit Key"
@@ -61,7 +62,7 @@ class EditKeyDialogWindow(
         valueField = JBTextField(keyValue.value, TEXT_FIELD_SIZE)
 
         return JPanel(GridLayoutManager(2, 2)).apply {
-            add(JBLabel("Key:"), gridConstraints(0, 0).leftAlignedLabel())
+            add(JBLabel("Key:").apply { isEnabled = false }, gridConstraints(0, 0).leftAlignedLabel())
             add(keyField, gridConstraints(0, 1).textField())
 
             add(JBLabel("Value:"), gridConstraints(1, 0).leftAlignedLabel())
@@ -71,18 +72,29 @@ class EditKeyDialogWindow(
 
     private fun createRevisionsPanel(): JComponent {
         revisionsTableModel = RevisionsTableModel()
+        startRevisionLabel = JBLabel().apply {
+            isVisible = false
+        }
         return JPanel(BorderLayout()).apply {
             val loadButton = JButton("Load Revisions").apply {
                 addActionListener {
                     watcher?.close()
+                    revisionsTableModel.clear()
                     watcher = EtcdService.getInstance(project).getRevisions(hosts, keyField.text) {
                         it.revisions.forEach(revisionsTableModel::addRevision)
                     }
+                    startRevisionLabel.text = if (watcher != null) {
+                        "Least revision shown: ${watcher?.startRevision}"
+                    } else {
+                        "Error while loading revisions"
+                    }
+                    startRevisionLabel.isVisible = true
                 }
             }
             addNorth(
                 JPanel(FlowLayout(FlowLayout.LEFT)).apply {
                     add(loadButton)
+                    add(startRevisionLabel)
                 }
             )
 
@@ -135,7 +147,10 @@ private class RevisionsTableModel : DefaultTableModel(Vector<Vector<String>>(), 
     fun addRevision(revisionInfo: EtcdRevisionInfo) {
         val row = Vector(columnsModel.map { it.extractor(revisionInfo) })
         insertRow(0, row)
-        fireTableStructureChanged()
+    }
+
+    fun clear() {
+        setDataVector(Vector<Vector<String>>(), columnNames)
     }
 
     override fun isCellEditable(row: Int, column: Int) = false
