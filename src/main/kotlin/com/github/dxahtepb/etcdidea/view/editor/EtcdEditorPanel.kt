@@ -3,6 +3,7 @@ package com.github.dxahtepb.etcdidea.view.editor
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
+import com.github.dxahtepb.etcdidea.view.addCenter
 import com.github.dxahtepb.etcdidea.view.editor.actions.AddKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.DeleteKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.EditKeyAction
@@ -53,7 +54,7 @@ class EtcdEditorPanel(
             .addExtraAction(AnActionButton.fromAction(EditKeyAction(this)))
             .addExtraAction(AnActionButton.fromAction(RefreshTableAction(this)))
         return JPanel(BorderLayout()).apply {
-            add(resultTableDecorator.createPanel(), BorderLayout.CENTER)
+            addCenter(resultTableDecorator.createPanel())
         }
     }
 

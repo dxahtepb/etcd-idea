@@ -3,8 +3,11 @@ package com.github.dxahtepb.etcdidea.view.browser
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
+import com.github.dxahtepb.etcdidea.view.addCenter
+import com.github.dxahtepb.etcdidea.view.addNorth
 import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
+import com.github.dxahtepb.etcdidea.view.withNoBorder
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -15,6 +18,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.JBUI.Borders.customLine
 import java.awt.BorderLayout
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
@@ -38,16 +42,14 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
 
     init {
         rootPanel = JPanel(BorderLayout()).apply {
-            add(createToolbarPanel(), BorderLayout.NORTH)
-            val splitterBorder = JBUI.Borders.customLine(JBUI.CurrentTheme.ToolWindow.borderColor(), 1, 0, 0, 0)
-            add(
+            addNorth(createToolbarPanel())
+            addCenter(
                 OnePixelSplitter(true, 0.6f).apply {
                     firstComponent = createTreePanel()
                     secondComponent = createTablePanel().apply {
-                        border = splitterBorder
+                        border = customLine(JBUI.CurrentTheme.ToolWindow.borderColor(), 1, 0, 0, 0)
                     }
-                },
-                BorderLayout.CENTER
+                }
             )
         }
     }
@@ -61,7 +63,7 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
         return JPanel(BorderLayout()).apply {
-            add(actionToolbar.component, BorderLayout.CENTER)
+            addCenter(actionToolbar.component)
         }
     }
 
@@ -95,7 +97,7 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
         }
 
         return JPanel(BorderLayout()).apply {
-            add(JBScrollPane(myTree).withNoBorder(), BorderLayout.CENTER)
+            addCenter(JBScrollPane(myTree).withNoBorder())
         }
     }
 
@@ -120,7 +122,7 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
         }
         statsTable.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         return JPanel(BorderLayout()).apply {
-            add(JBScrollPane(statsTable).withNoBorder(), BorderLayout.CENTER)
+            addCenter(JBScrollPane(statsTable).withNoBorder())
         }
     }
 
@@ -143,5 +145,3 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
         return node?.userObject as? EtcdServerConfiguration
     }
 }
-
-private fun JComponent.withNoBorder() = this.apply { border = JBUI.Borders.empty() }
