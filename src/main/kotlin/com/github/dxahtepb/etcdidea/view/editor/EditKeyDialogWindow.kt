@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.view.editor
 
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
+import com.github.dxahtepb.etcdidea.model.EtcdKvRevisions
 import com.github.dxahtepb.etcdidea.model.EtcdRevisionInfo
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
@@ -80,9 +81,8 @@ class EditKeyDialogWindow(
                 addActionListener {
                     watcher?.close()
                     revisionsTableModel.clear()
-                    watcher = EtcdService.getInstance(project).getRevisions(hosts, keyField.text) {
-                        it.revisions.forEach(revisionsTableModel::addRevision)
-                    }
+                    watcher = EtcdService.getInstance(project)
+                        .getRevisions(hosts, keyField.text, revisionsTableModel::addRevisions)
                     startRevisionLabel.text = if (watcher != null) {
                         "Least revision shown: ${watcher?.startRevision}"
                     } else {
@@ -144,12 +144,19 @@ private class RevisionsTableModel : DefaultTableModel(Vector<Vector<String>>(), 
         private val columnNames = Vector(columnsModel.map(ColumnDescriptor::name))
     }
 
-    fun addRevision(revisionInfo: EtcdRevisionInfo) {
-        val row = Vector(columnsModel.map { it.extractor(revisionInfo) })
-        insertRow(0, row)
+    val revisions = mutableListOf<Vector<String>>()
+
+    fun addRevisions(revisionInfos: EtcdKvRevisions) {
+        revisions.addAll(
+            revisionInfos.revisions.map { revisionInfo ->
+                Vector(columnsModel.map { it.extractor(revisionInfo) })
+            }
+        )
+        setDataVector(Vector(revisions.reversed()), columnNames)
     }
 
     fun clear() {
+        revisions.clear()
         setDataVector(Vector<Vector<String>>(), columnNames)
     }
 
