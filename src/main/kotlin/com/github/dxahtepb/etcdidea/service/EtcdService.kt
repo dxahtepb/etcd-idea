@@ -75,30 +75,26 @@ class EtcdService {
     ): CompletableFuture<Long> {
         var revision = 1L
         val future = CompletableFuture<Long>()
-        val watchOptions = WatchOption.newBuilder()
-            .withRevision(revision)
-            .withProgressNotify(true)
-            .build()
+        val watchOptions = WatchOption.newBuilder().withRevision(revision).withProgressNotify(true).build()
         val connection = EtcdConnectionHolder(serverConfiguration)
-        val watcherHolder = connection.execute(
-            notificationErrorSink { client ->
-                val onError = { e: Throwable ->
-                    if (e is CompactedException) {
-                        revision = e.compactedRevision
-                        future.complete(revision)
-                        Unit
-                    } else {
-                        throw e
-                    }
-                }
-                val onNext: (_: WatchResponse) -> Unit = {
+        val watcherHolder = connection.execute { client ->
+            val onError = { e: Throwable ->
+                if (e is CompactedException) {
+                    revision = e.compactedRevision
                     future.complete(revision)
                     Unit
+                } else {
+                    future.complete(revision)
+                    throw e
                 }
-                val watcher = client.watchClient.watch(key.toByteSequence(), watchOptions, onNext, onError)
-                EtcdWatcherHolder(watcher, connection, 1)
             }
-        )
+            val onNext: (_: WatchResponse) -> Unit = {
+                future.complete(revision)
+                Unit
+            }
+            val watcher = client.watchClient.watch(key.toByteSequence(), watchOptions, onNext, onError)
+            EtcdWatcherHolder(watcher, connection, 1)
+        }
         future.thenRun {
             watcherHolder?.close()
         }.exceptionally {
