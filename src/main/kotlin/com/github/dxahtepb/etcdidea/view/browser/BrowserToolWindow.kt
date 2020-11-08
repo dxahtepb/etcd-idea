@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.persistence.EtcdConfigurationStateComponent
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
 import com.github.dxahtepb.etcdidea.view.addCenter
@@ -27,11 +28,14 @@ import javax.swing.JTree
 import javax.swing.ListSelectionModel
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
-import javax.swing.tree.MutableTreeNode
 import javax.swing.tree.TreePath
 import javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION
 
-class BrowserToolWindow(private val project: Project, private val etcdService: EtcdService) {
+class BrowserToolWindow(
+    private val project: Project,
+    private val etcdService: EtcdService,
+    private val etcdState: EtcdConfigurationStateComponent
+) {
     private lateinit var treeModel: DefaultTreeModel
     private lateinit var myTree: Tree
 
@@ -52,6 +56,7 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
                 }
             )
         }
+        fillServers()
     }
 
     fun getContent(): JComponent = rootPanel
@@ -101,16 +106,23 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
         }
     }
 
-    private fun insertNewConfiguration(configuration: EtcdServerConfiguration) {
+    private fun addConfigurationToTree(configuration: EtcdServerConfiguration) {
         val childNode = DefaultMutableTreeNode(configuration, false)
         val root = treeModel.root as DefaultMutableTreeNode
         treeModel.insertNodeInto(childNode, root, root.childCount)
         myTree.scrollPathToVisible(TreePath(childNode.path))
     }
 
+    private fun insertNewConfiguration(configuration: EtcdServerConfiguration) {
+        etcdState.addEtcdConfiguration(configuration)
+        addConfigurationToTree(configuration)
+    }
+
     private fun deleteSelectedConfiguration() {
-        val nodeToRemove = myTree.selectionPath?.lastPathComponent as? MutableTreeNode ?: return
+        val nodeToRemove = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
+        val configuration = nodeToRemove.userObject as EtcdServerConfiguration
         treeModel.removeNodeFromParent(nodeToRemove)
+        etcdState.removeConfiguration(configuration)
     }
 
     private fun createTablePanel(): JComponent {
@@ -143,5 +155,9 @@ class BrowserToolWindow(private val project: Project, private val etcdService: E
     private fun getCurrentConnection(): EtcdServerConfiguration? {
         val node = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode
         return node?.userObject as? EtcdServerConfiguration
+    }
+
+    private fun fillServers() {
+        etcdState.getConfigurations().forEach(::addConfigurationToTree)
     }
 }
