@@ -4,10 +4,12 @@ import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.persistence.EtcdConfigurationStateComponent
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
+import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
 import com.github.dxahtepb.etcdidea.view.addCenter
 import com.github.dxahtepb.etcdidea.view.addNorth
 import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
+import com.github.dxahtepb.etcdidea.view.getScrollComponent
 import com.github.dxahtepb.etcdidea.view.withNoBorder
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -15,8 +17,6 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.OnePixelSplitter
-import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.table.JBTable
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.Borders.customLine
@@ -25,7 +25,6 @@ import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JTree
-import javax.swing.ListSelectionModel
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
@@ -40,7 +39,6 @@ class BrowserToolWindow(
     private lateinit var myTree: Tree
 
     private lateinit var statsModel: EtcdStatusTableModel
-    private lateinit var statsTable: JBTable
 
     private val rootPanel: JPanel
 
@@ -102,7 +100,7 @@ class BrowserToolWindow(
         }
 
         return JPanel(BorderLayout()).apply {
-            addCenter(JBScrollPane(myTree).withNoBorder())
+            addCenter(myTree.getScrollComponent().withNoBorder())
         }
     }
 
@@ -127,14 +125,8 @@ class BrowserToolWindow(
 
     private fun createTablePanel(): JComponent {
         statsModel = EtcdStatusTableModel()
-        statsTable = JBTable(statsModel).apply {
-            dragEnabled = false
-            tableHeader.reorderingAllowed = false
-            columnSelectionAllowed = false
-        }
-        statsTable.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         return JPanel(BorderLayout()).apply {
-            addCenter(JBScrollPane(statsTable).withNoBorder())
+            addCenter(SingleSelectionTable(statsModel).getScrollComponent().withNoBorder())
         }
     }
 

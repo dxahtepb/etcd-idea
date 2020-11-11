@@ -3,21 +3,25 @@ package com.github.dxahtepb.etcdidea.view.editor
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
+import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
 import com.github.dxahtepb.etcdidea.view.addCenter
+import com.github.dxahtepb.etcdidea.view.addNorth
+import com.github.dxahtepb.etcdidea.view.addWest
 import com.github.dxahtepb.etcdidea.view.editor.actions.AddKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.DeleteKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.EditKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.RefreshTableAction
-import com.intellij.openapi.actionSystem.ActionToolbarPosition
+import com.github.dxahtepb.etcdidea.view.getScrollComponent
+import com.github.dxahtepb.etcdidea.view.withNoBorder
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
-import com.intellij.ui.AnActionButton
-import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.ListSelectionModel
 
 class EtcdEditorPanel(
     private val project: Project,
@@ -31,7 +35,8 @@ class EtcdEditorPanel(
 
     init {
         rootPanel = JPanel(BorderLayout()).apply {
-            add(createTablePanel(), BorderLayout.CENTER)
+            addNorth(createToolbarPanel())
+            addCenter(createTablePanel())
         }
         updateResults()
     }
@@ -40,21 +45,31 @@ class EtcdEditorPanel(
 
     private fun createTablePanel(): JComponent {
         resultsModel = EtcdTableModel()
-        resultTable = JBTable(resultsModel).apply {
-            dragEnabled = false
-            tableHeader.reorderingAllowed = false
-            columnSelectionAllowed = false
-        }
-        resultTable.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
-        val resultTableDecorator = ToolbarDecorator.createDecorator(resultTable)
-            .setToolbarPosition(ActionToolbarPosition.TOP)
-            .setPanelBorder(JBUI.Borders.empty()).setScrollPaneBorder(JBUI.Borders.empty())
-            .addExtraAction(AnActionButton.fromAction(AddKeyAction(this)))
-            .addExtraAction(AnActionButton.fromAction(DeleteKeyAction(this)))
-            .addExtraAction(AnActionButton.fromAction(EditKeyAction(this)))
-            .addExtraAction(AnActionButton.fromAction(RefreshTableAction(this)))
+        resultTable = SingleSelectionTable(resultsModel)
         return JPanel(BorderLayout()).apply {
-            addCenter(resultTableDecorator.createPanel())
+            addCenter(resultTable.getScrollComponent().withNoBorder())
+        }
+    }
+
+    private fun createToolbarPanel(): JComponent {
+        val actionGroup = DefaultActionGroup("EtcdKeyManagementActions", false).also {
+            it.add(AddKeyAction(this))
+            it.add(DeleteKeyAction(this))
+            it.add(EditKeyAction(this))
+            it.addSeparator()
+            it.add(RefreshTableAction(this))
+        }
+        val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdKeyManagement", actionGroup, true)
+            .apply {
+                layoutPolicy = ActionToolbar.AUTO_LAYOUT_POLICY
+            }
+        return JPanel(BorderLayout()).apply {
+            addWest(
+                actionToolbar.component.apply {
+                    isOpaque = false
+                    border = JBUI.Borders.empty()
+                }
+            )
         }
     }
 
