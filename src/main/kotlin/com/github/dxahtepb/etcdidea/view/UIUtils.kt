@@ -31,5 +31,6 @@ internal fun GridConstraints.textField() =
 internal fun JPanel.addNorth(content: JComponent) = add(content, BorderLayout.NORTH)
 internal fun JPanel.addCenter(content: JComponent) = add(content, BorderLayout.CENTER)
 internal fun JPanel.addWest(content: JComponent) = add(content, BorderLayout.WEST)
+internal fun JPanel.addEast(content: JComponent) = add(content, BorderLayout.EAST)
 
 fun Component.getScrollComponent() = JBScrollPane(this)

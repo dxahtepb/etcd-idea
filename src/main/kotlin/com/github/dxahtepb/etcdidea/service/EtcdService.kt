@@ -22,7 +22,21 @@ import java.util.concurrent.TimeUnit
 class EtcdService {
 
     fun listAllEntries(serverConfiguration: EtcdServerConfiguration): EtcdKvEntries {
-        val getOption = GetOption.newBuilder().withRange(ZERO_KEY).build()
+        return fetchFiltered(serverConfiguration)
+    }
+
+    fun listEntriesWithPrefix(serverConfiguration: EtcdServerConfiguration, prefix: String): EtcdKvEntries {
+        return fetchFiltered(serverConfiguration, prefix)
+    }
+
+    private fun fetchFiltered(serverConfiguration: EtcdServerConfiguration, prefix: String? = null): EtcdKvEntries {
+        val getOption = GetOption.newBuilder()
+            .withRange(ZERO_KEY)
+            .apply {
+                if (prefix != null) {
+                    withPrefix(prefix.toByteSequence())
+                }
+            }.build()
         val keyValues = serverConfiguration.useConnection { client ->
             client.kvClient.get(ZERO_KEY, getOption)
                 .thenApply { kvClient -> kvClient.kvs.map { EtcdKeyValue.fromKeyValue(it) } }

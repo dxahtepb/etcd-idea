@@ -5,6 +5,7 @@ import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
 import com.github.dxahtepb.etcdidea.view.addCenter
+import com.github.dxahtepb.etcdidea.view.addEast
 import com.github.dxahtepb.etcdidea.view.addNorth
 import com.github.dxahtepb.etcdidea.view.addWest
 import com.github.dxahtepb.etcdidea.view.editor.actions.AddKeyAction
@@ -17,9 +18,12 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
+import java.awt.FlowLayout
+import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -32,6 +36,7 @@ class EtcdEditorPanel(
 
     private lateinit var resultsModel: EtcdTableModel
     private lateinit var resultTable: JBTable
+    private lateinit var searchPrefixField: JBTextField
 
     init {
         rootPanel = JPanel(BorderLayout()).apply {
@@ -52,6 +57,13 @@ class EtcdEditorPanel(
     }
 
     private fun createToolbarPanel(): JComponent {
+        return JPanel(BorderLayout()).apply {
+            addWest(createKeyManagementToolbarPanel())
+            addEast(createSearchToolbarPanel())
+        }
+    }
+
+    private fun createKeyManagementToolbarPanel(): JComponent {
         val actionGroup = DefaultActionGroup("EtcdKeyManagementActions", false).also {
             it.add(AddKeyAction(this))
             it.add(DeleteKeyAction(this))
@@ -63,13 +75,17 @@ class EtcdEditorPanel(
             .apply {
                 layoutPolicy = ActionToolbar.AUTO_LAYOUT_POLICY
             }
-        return JPanel(BorderLayout()).apply {
-            addWest(
-                actionToolbar.component.apply {
-                    isOpaque = false
-                    border = JBUI.Borders.empty()
-                }
-            )
+        return actionToolbar.component.apply {
+            isOpaque = false
+            border = JBUI.Borders.empty()
+        }
+    }
+
+    private fun createSearchToolbarPanel(): JComponent {
+        searchPrefixField = JBTextField("", 19)
+        return JPanel(FlowLayout()).apply {
+            add(searchPrefixField)
+            add(JButton("Search").apply { addActionListener { updateResults() } })
         }
     }
 
@@ -93,7 +109,12 @@ class EtcdEditorPanel(
     }
 
     fun updateResults() {
-        val entries = etcdService.listAllEntries(configuration)
+        val prefix = searchPrefixField.text
+        val entries = if (prefix.isEmpty()) {
+            etcdService.listAllEntries(configuration)
+        } else {
+            etcdService.listEntriesWithPrefix(configuration, prefix)
+        }
         resultsModel.setDataVector(entries)
     }
 
