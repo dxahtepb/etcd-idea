@@ -23,7 +23,6 @@ import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.FlowLayout
-import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -82,10 +81,14 @@ class EtcdEditorPanel(
     }
 
     private fun createSearchToolbarPanel(): JComponent {
-        searchPrefixField = JBTextField("", 19)
+        searchPrefixField = JBTextField("", 19).apply {
+            emptyText.text = "<Key prefix>"
+            addActionListener {
+                updateResults()
+            }
+        }
         return JPanel(FlowLayout()).apply {
             add(searchPrefixField)
-            add(JButton("Search").apply { addActionListener { updateResults() } })
         }
     }
 

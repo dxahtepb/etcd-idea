@@ -8,7 +8,7 @@ import java.awt.Component
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-internal fun JComponent.withNoBorder() = this.apply { border = JBUI.Borders.empty() }
+internal fun <T : JComponent> T.withNoBorder(): T = this.apply { border = JBUI.Borders.empty() }
 
 internal fun gridConstraints(row: Int, column: Int) =
     GridConstraints().apply {
