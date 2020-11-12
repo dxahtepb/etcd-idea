@@ -22,27 +22,26 @@ import java.util.concurrent.TimeUnit
 class EtcdService {
 
     fun listAllEntries(serverConfiguration: EtcdServerConfiguration): EtcdKvEntries {
-        return fetchFiltered(serverConfiguration)
+        val getOption = GetOption.newBuilder().withRange(ZERO_KEY).build()
+        return EtcdKvEntries(fetchKeyValuesWithOptions(serverConfiguration, ZERO_KEY, getOption))
     }
 
     fun listEntriesWithPrefix(serverConfiguration: EtcdServerConfiguration, prefix: String): EtcdKvEntries {
-        return fetchFiltered(serverConfiguration, prefix)
+        val byteSequenceKey = prefix.toByteSequence()
+        val getOption = GetOption.newBuilder().withPrefix(byteSequenceKey).build()
+        return EtcdKvEntries(fetchKeyValuesWithOptions(serverConfiguration, byteSequenceKey, getOption))
     }
 
-    private fun fetchFiltered(serverConfiguration: EtcdServerConfiguration, prefix: String? = null): EtcdKvEntries {
-        val getOption = GetOption.newBuilder()
-            .withRange(ZERO_KEY)
-            .apply {
-                if (prefix != null) {
-                    withPrefix(prefix.toByteSequence())
-                }
-            }.build()
-        val keyValues = serverConfiguration.useConnection { client ->
-            client.kvClient.get(ZERO_KEY, getOption)
+    private fun fetchKeyValuesWithOptions(
+        serverConfiguration: EtcdServerConfiguration,
+        key: ByteSequence,
+        getOption: GetOption
+    ): List<EtcdKeyValue> {
+        return serverConfiguration.useConnection { client ->
+            client.kvClient.get(key, getOption)
                 .thenApply { kvClient -> kvClient.kvs.map { EtcdKeyValue.fromKeyValue(it) } }
                 .get()
         } ?: emptyList()
-        return EtcdKvEntries(keyValues)
     }
 
     fun putNewEntry(serverConfiguration: EtcdServerConfiguration, kv: EtcdKeyValue) {
