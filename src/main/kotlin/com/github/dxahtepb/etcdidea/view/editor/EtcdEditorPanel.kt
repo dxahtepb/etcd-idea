@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBTextField
+import com.intellij.ui.components.panels.NonOpaquePanel
 import com.intellij.ui.table.JBTable
 import com.intellij.util.text.nullize
 import com.intellij.util.ui.JBUI
@@ -86,7 +87,12 @@ class EtcdEditorPanel(
                 updateResults()
             }
         }
-        return JPanel(FlowLayout()).apply {
+        return NonOpaquePanel(
+            FlowLayout().apply {
+                hgap = 0
+                vgap = 0
+            }
+        ).apply {
             add(searchPrefixField)
         }
     }
