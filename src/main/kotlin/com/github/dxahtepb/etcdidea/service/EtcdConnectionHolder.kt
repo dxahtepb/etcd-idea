@@ -16,7 +16,7 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
         client = builder.build()
     }
 
-    fun <T> execute(action: (client: Client) -> T?) = action.invoke(client)
+    suspend fun <T> execute(action: suspend (client: Client) -> T?) = action.invoke(client)
 
     override fun close() {
         client.close()

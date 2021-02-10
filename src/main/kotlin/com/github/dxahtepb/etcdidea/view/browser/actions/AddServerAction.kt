@@ -6,9 +6,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 
-private typealias Callback = (configuration: EtcdServerConfiguration) -> Unit
-
-class AddServerAction(private val callback: Callback) :
+class AddServerAction(private val callback: (configuration: EtcdServerConfiguration) -> Unit) :
     AnAction("Add Etcd server", "Add Etcd server", AllIcons.General.Add) {
 
     override fun actionPerformed(e: AnActionEvent) {

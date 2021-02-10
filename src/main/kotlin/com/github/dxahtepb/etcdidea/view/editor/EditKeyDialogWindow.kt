@@ -1,16 +1,15 @@
 package com.github.dxahtepb.etcdidea.view.editor
 
+import com.github.dxahtepb.etcdidea.invokeLaterOnEdt
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdKvRevisions
 import com.github.dxahtepb.etcdidea.model.EtcdRevisionInfo
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.service.EtcdWatcherHolder
-import com.github.dxahtepb.etcdidea.view.addCenter
-import com.github.dxahtepb.etcdidea.view.addNorth
-import com.github.dxahtepb.etcdidea.view.gridConstraints
-import com.github.dxahtepb.etcdidea.view.leftAlignedLabel
-import com.github.dxahtepb.etcdidea.view.textField
+import com.github.dxahtepb.etcdidea.uiDispatcher
+import com.github.dxahtepb.etcdidea.view.*
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
@@ -19,10 +18,12 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.uiDesigner.core.GridLayoutManager
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
-import java.util.Vector
+import java.util.*
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -42,11 +43,13 @@ class EditKeyDialogWindow(
     private lateinit var valueField: JBTextField
     private lateinit var revisionsTableModel: RevisionsTableModel
     private lateinit var startRevisionLabel: JBLabel
+    private var modalityState: ModalityState
 
     init {
         title = "Edit Key"
         setOKButtonText("Submit")
         super.init()
+        modalityState = ModalityState.current()
     }
 
     override fun createCenterPanel() =
@@ -81,14 +84,21 @@ class EditKeyDialogWindow(
                 addActionListener {
                     watcher?.close()
                     revisionsTableModel.clear()
-                    watcher = EtcdService.getInstance(project)
-                        .getRevisions(hosts, keyField.text, revisionsTableModel::addRevisions)
-                    startRevisionLabel.text = if (watcher != null) {
-                        "Least revision shown: ${watcher?.startRevision}"
-                    } else {
-                        "Error while loading revisions"
+                    val modalityState = ModalityState.current()
+                    GlobalScope.launch(uiDispatcher(modalityState)) {
+                        watcher = EtcdService.getInstance(project)
+                            .getRevisions(hosts, keyField.text) { revisions ->
+                                invokeLaterOnEdt(modalityState) {
+                                    revisionsTableModel.addRevisions(revisions)
+                                }
+                            }
+                        startRevisionLabel.text = if (watcher != null) {
+                            "Least revision shown: ${watcher?.startRevision}"
+                        } else {
+                            "Error while loading revisions"
+                        }
+                        startRevisionLabel.isVisible = true
                     }
-                    startRevisionLabel.isVisible = true
                 }
             }
             addNorth(
@@ -121,15 +131,12 @@ class EditKeyDialogWindow(
         return null
     }
 
-    override fun doOKAction() {
-        EtcdService.getInstance(project).putNewEntry(hosts, EtcdKeyValue(keyField.text, valueField.text))
-        super.doOKAction()
-    }
-
     override fun dispose() {
         watcher?.close()
         super.dispose()
     }
+
+    fun getKv() = EtcdKeyValue(keyField.text, valueField.text)
 }
 
 private class RevisionsTableModel : DefaultTableModel(Vector<Vector<String>>(), columnNames) {
@@ -147,12 +154,11 @@ private class RevisionsTableModel : DefaultTableModel(Vector<Vector<String>>(), 
     val revisions = mutableListOf<Vector<String>>()
 
     fun addRevisions(revisionInfos: EtcdKvRevisions) {
-        revisions.addAll(
-            revisionInfos.revisions.map { revisionInfo ->
-                Vector(columnsModel.map { it.extractor(revisionInfo) })
-            }
-        )
-        setDataVector(Vector(revisions.reversed()), columnNames)
+        revisionInfos.revisions
+            .map { toColumn(it) }
+            .reversed()
+            .let { revisions.addAll(0, it) }
+        setDataVector(Vector(revisions), columnNames)
     }
 
     fun clear() {
@@ -161,6 +167,8 @@ private class RevisionsTableModel : DefaultTableModel(Vector<Vector<String>>(), 
     }
 
     override fun isCellEditable(row: Int, column: Int) = false
+
+    private fun toColumn(rev: EtcdRevisionInfo) = Vector(columnsModel.map { it.extractor(rev) })
 
     data class ColumnDescriptor(val name: String, val extractor: (rev: EtcdRevisionInfo) -> String)
 }

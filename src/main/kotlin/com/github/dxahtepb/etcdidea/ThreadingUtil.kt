@@ -8,10 +8,16 @@ import java.util.concurrent.Executor
 @JvmField val POOL_EXECUTOR = Executor { command: Runnable ->
     ApplicationManager.getApplication().executeOnPooledThread(command)
 }
+
 @JvmField val EDT_EXECUTOR = Executor { command: Runnable ->
     GuiUtils.invokeLaterIfNeeded(command, ModalityState.defaultModalityState())
 }
+
 @JvmField val NON_EDT_EXECUTOR = Executor { command: Runnable ->
     if (ApplicationManager.getApplication().isDispatchThread) POOL_EXECUTOR.execute(command)
     else command.run()
+}
+
+fun invokeLaterOnEdt(modality: ModalityState = ModalityState.defaultModalityState(), command: () -> Unit) {
+    GuiUtils.invokeLaterIfNeeded(command, modality)
 }

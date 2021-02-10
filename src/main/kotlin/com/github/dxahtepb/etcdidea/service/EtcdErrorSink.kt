@@ -4,27 +4,28 @@ import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import io.etcd.jetcd.Client
 import java.util.concurrent.ExecutionException
 
-internal fun <T> notificationErrorSink(f: (Client) -> T?) = f.withNotificationErrorSink()
+private val LOG = logger<EtcdService>()
 
-internal fun <T> ((Client) -> T?).withNotificationErrorSink(): (Client) -> T? {
+internal suspend fun <T> notificationErrorSink(f: suspend (Client) -> T?) = f.withNotificationErrorSink()
+
+internal suspend fun <T> (suspend (Client) -> T?).withNotificationErrorSink(): suspend (Client) -> T? {
     return this.withErrorSink(notificationErrorSink)
 }
 
-internal fun <T> ((Client) -> T?).withErrorSink(sink: (Exception) -> Unit): (Client) -> T? {
-    return decorated@{
-        return@decorated try {
-            this.invoke(it)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            sink(e)
-            null
-        }
+internal suspend fun <T> (suspend (Client) -> T?).withErrorSink(sink: (Exception) -> Unit): suspend (Client) -> T? = {
+    try {
+        this.invoke(it)
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        sink(e)
+        null
     }
 }
 
-internal fun <V> executeWithErrorSink(sink: (Exception) -> Unit, action: () -> V?): V? {
+internal suspend fun <V> executeWithErrorSink(sink: (Exception) -> Unit, action: suspend () -> V?): V? {
     try {
         return action()
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -36,6 +37,7 @@ internal fun <V> executeWithErrorSink(sink: (Exception) -> Unit, action: () -> V
 internal val notificationErrorSink = { e: Throwable ->
     val cause = getCause(e)
     if (!ApplicationManager.getApplication().isUnitTestMode) {
+        LOG.error(cause)
         Notifications.Bus.notify(
             Notification(
                 "Etcd Browser",

@@ -1,11 +1,7 @@
 package com.github.dxahtepb.etcdidea.service
 
-import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
-import com.github.dxahtepb.etcdidea.model.EtcdKvEntries
-import com.github.dxahtepb.etcdidea.model.EtcdKvRevisions
-import com.github.dxahtepb.etcdidea.model.EtcdMemberStatus
-import com.github.dxahtepb.etcdidea.model.EtcdRevisionInfo
-import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.*
+import com.github.dxahtepb.etcdidea.model.*
 import com.intellij.openapi.project.Project
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
@@ -13,26 +9,29 @@ import io.etcd.jetcd.common.exception.CompactedException
 import io.etcd.jetcd.options.GetOption
 import io.etcd.jetcd.options.WatchOption
 import io.etcd.jetcd.watch.WatchResponse
+import kotlinx.coroutines.*
+import kotlinx.coroutines.future.asDeferred
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 @Suppress("UnstableApiUsage")
 class EtcdService {
-
-    fun listAllEntries(serverConfiguration: EtcdServerConfiguration): EtcdKvEntries {
-        val getOption = GetOption.newBuilder().withRange(ZERO_KEY).build()
-        return EtcdKvEntries(fetchKeyValuesWithOptions(serverConfiguration, ZERO_KEY, getOption))
+    suspend fun listEntries(serverConfiguration: EtcdServerConfiguration, prefix: String? = null): EtcdKvEntries {
+        return withContext(Dispatchers.IO) {
+            val byteSequenceKey = prefix?.toByteSequence() ?: ZERO_KEY
+            val getOptionBuilder = GetOption.newBuilder().apply {
+                if (prefix != null) {
+                    withPrefix(byteSequenceKey)
+                } else {
+                    withRange(byteSequenceKey)
+                }
+            }
+            EtcdKvEntries(fetchKeyValuesWithOptions(serverConfiguration, byteSequenceKey, getOptionBuilder.build()))
+        }
     }
 
-    fun listEntriesWithPrefix(serverConfiguration: EtcdServerConfiguration, prefix: String): EtcdKvEntries {
-        val byteSequenceKey = prefix.toByteSequence()
-        val getOption = GetOption.newBuilder().withPrefix(byteSequenceKey).build()
-        return EtcdKvEntries(fetchKeyValuesWithOptions(serverConfiguration, byteSequenceKey, getOption))
-    }
-
-    private fun fetchKeyValuesWithOptions(
+    private suspend fun fetchKeyValuesWithOptions(
         serverConfiguration: EtcdServerConfiguration,
         key: ByteSequence,
         getOption: GetOption
@@ -40,49 +39,55 @@ class EtcdService {
         return serverConfiguration.useConnection { client ->
             client.kvClient.get(key, getOption)
                 .thenApply { kvClient -> kvClient.kvs.map { EtcdKeyValue.fromKeyValue(it) } }
-                .get()
+                .asDeferred().await()
         } ?: emptyList()
     }
 
-    fun putNewEntry(serverConfiguration: EtcdServerConfiguration, kv: EtcdKeyValue) {
-        serverConfiguration.useConnection { client ->
-            client.kvClient.put(kv.key.toByteSequence(), kv.value.toByteSequence()).get()
+    suspend fun putNewEntry(serverConfiguration: EtcdServerConfiguration, kv: EtcdKeyValue) {
+        withContext(Dispatchers.IO) {
+            serverConfiguration.useConnection { client ->
+                client.kvClient.put(kv.key.toByteSequence(), kv.value.toByteSequence()).asDeferred().await()
+            }
         }
     }
 
-    fun deleteEntry(serverConfiguration: EtcdServerConfiguration, key: String) {
-        serverConfiguration.useConnection { client ->
-            client.kvClient.delete(key.toByteSequence()).get()
+    suspend fun deleteEntry(serverConfiguration: EtcdServerConfiguration, key: String) {
+        withContext(Dispatchers.IO) {
+            serverConfiguration.useConnection { client ->
+                client.kvClient.delete(key.toByteSequence()).asDeferred().await()
+            }
         }
     }
 
-    fun getRevisions(
+    suspend fun getRevisions(
         serverConfiguration: EtcdServerConfiguration,
         key: String,
         callback: (EtcdKvRevisions) -> Unit
     ): EtcdWatcherHolder? {
-        val revision = executeWithErrorSink(notificationErrorSink) {
-            getLeastAvailableRevision(serverConfiguration, key).get(1, TimeUnit.SECONDS)
-        } ?: return null
-        val watchOptions = WatchOption.newBuilder().withRevision(revision).build()
-        val connection = EtcdConnectionHolder(serverConfiguration)
-        val watcher = connection.execute(
-            notificationErrorSink { client ->
-                val onNext = { watchResponse: WatchResponse ->
-                    val events = mutableListOf<EtcdRevisionInfo>()
-                    watchResponse.events.forEach {
-                        events.add(EtcdRevisionInfo.fromWatchEvent(it))
+        return withContext(Dispatchers.IO) {
+            val revision = executeWithErrorSink(notificationErrorSink) {
+                getLeastAvailableRevision(serverConfiguration, key)
+                    .asDeferred().await(1000, null)
+            } ?: return@withContext null
+            val watchOptions = WatchOption.newBuilder().withRevision(revision).build()
+            val connection = EtcdConnectionHolder(serverConfiguration)
+            val watcher = connection.execute(
+                notificationErrorSink { client ->
+                    val onNext: (WatchResponse) -> Unit = { watchResponse ->
+                        val revisions = watchResponse.events
+                            .map { EtcdRevisionInfo.fromWatchEvent(it) }
+                            .let { EtcdKvRevisions(it) }
+                        callback(revisions)
                     }
-                    callback(EtcdKvRevisions(events))
+                    val onError = notificationErrorSink
+                    client.watchClient.watch(key.toByteSequence(), watchOptions, onNext, onError)
                 }
-                val onError = notificationErrorSink
-                client.watchClient.watch(key.toByteSequence(), watchOptions, onNext, onError)
-            }
-        )
-        return EtcdWatcherHolder(watcher, connection, revision)
+            )
+            EtcdWatcherHolder(watcher, connection, revision)
+        }
     }
 
-    private fun getLeastAvailableRevision(
+    private suspend fun getLeastAvailableRevision(
         serverConfiguration: EtcdServerConfiguration,
         key: String
     ): CompletableFuture<Long> {
@@ -117,11 +122,13 @@ class EtcdService {
         return future
     }
 
-    fun getMemberStatus(serverConfiguration: EtcdServerConfiguration): EtcdMemberStatus? {
-        return serverConfiguration.useConnection { client: Client ->
-            client.maintenanceClient.statusMember(URI(serverConfiguration.hosts))
-                .thenApply { EtcdMemberStatus.fromResponse(it) }
-                .get()
+    suspend fun getMemberStatus(serverConfiguration: EtcdServerConfiguration): EtcdMemberStatus? {
+        return withContext(Dispatchers.IO) {
+            serverConfiguration.useConnection { client: Client ->
+                client.maintenanceClient.statusMember(URI(serverConfiguration.hosts))
+                    .thenApply { EtcdMemberStatus.fromResponse(it) }
+                    .asDeferred().await()
+            }
         }
     }
 
@@ -130,9 +137,9 @@ class EtcdService {
     }
 }
 
-private fun <T> EtcdServerConfiguration.useConnection(action: (client: Client) -> T?): T? {
+private suspend fun <T> EtcdServerConfiguration.useConnection(action: suspend (client: Client) -> T?): T? {
     val connection = EtcdConnectionHolder(this)
-    return connection.use { it.execute(action.withNotificationErrorSink()) }
+    return connection.useAsync { it.execute(action.withNotificationErrorSink()) }
 }
 
 private val ZERO_KEY: ByteSequence = ByteSequence.from(byteArrayOf(0.toByte()))

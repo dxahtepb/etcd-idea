@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
+import com.github.dxahtepb.etcdidea.UI_DISPATCHER
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.persistence.EtcdConfigurationStateComponent
 import com.github.dxahtepb.etcdidea.service.EtcdService
@@ -20,6 +21,8 @@ import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.Borders.customLine
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.awt.BorderLayout
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
@@ -131,8 +134,10 @@ class BrowserToolWindow(
     }
 
     private fun updateStatsTable(configuration: EtcdServerConfiguration) {
-        etcdService.getMemberStatus(configuration)?.let {
-            statsModel.setDataVector(it)
+        GlobalScope.launch(UI_DISPATCHER) {
+            etcdService.getMemberStatus(configuration)?.let {
+                statsModel.setDataVector(it)
+            }
         }
     }
 
