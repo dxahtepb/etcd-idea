@@ -16,17 +16,20 @@ import com.github.dxahtepb.etcdidea.view.browser.actions.EditServerAction
 import com.github.dxahtepb.etcdidea.view.getScrollComponent
 import com.github.dxahtepb.etcdidea.view.withNoBorder
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.OnePixelSplitter
+import com.intellij.ui.PopupHandler
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.Borders.customLine
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
+import java.awt.Component
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -68,8 +71,6 @@ class BrowserToolWindow(
     private fun createToolbarPanel(): JComponent {
         val actionGroup = DefaultActionGroup("BrowserActionGroup", false).apply {
             add(AddServerAction(::insertNewConfiguration))
-            add(DeleteServerAction(::deleteSelectedConfiguration, ::isTreeSelected))
-            add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
         return JPanel(BorderLayout()).apply {
@@ -96,6 +97,20 @@ class BrowserToolWindow(
                 return true
             }
         }.installOn(myTree)
+
+        object : PopupHandler() {
+            val actionGroup = DefaultActionGroup("BrowserPopupActionGroup", true).apply {
+                add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
+                addSeparator()
+                add(DeleteServerAction(::deleteSelectedConfiguration, ::isTreeSelected))
+            }
+
+            override fun invokePopup(comp: Component?, x: Int, y: Int) {
+                val popupMenu = ActionManager.getInstance()
+                    .createActionPopupMenu(ActionPlaces.UNKNOWN, actionGroup)
+                popupMenu.component.show(comp, x, y)
+            }
+        }.let { myTree.addMouseListener(it) }
 
         myTree.selectionModel.addTreeSelectionListener {
             val selectedConfiguration = getCurrentConnection()
