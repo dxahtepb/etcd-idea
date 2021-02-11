@@ -4,6 +4,8 @@ import com.github.dxahtepb.etcdidea.UI_DISPATCHER
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.persistence.EtcdConfigurationStateComponent
 import com.github.dxahtepb.etcdidea.service.EtcdService
+import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
+import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
 import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
 import com.github.dxahtepb.etcdidea.view.addCenter
@@ -126,6 +128,7 @@ class BrowserToolWindow(
         val configuration = nodeToRemove.userObject as EtcdServerConfiguration
         treeModel.removeNodeFromParent(nodeToRemove)
         etcdState.removeConfiguration(configuration)
+        CredentialsService.instance.forgetPassword(PasswordKey(configuration.id))
     }
 
     private fun editSelectedConfiguration() {

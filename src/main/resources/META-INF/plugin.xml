@@ -15,5 +15,6 @@
                            implementationClass="com.github.dxahtepb.etcdidea.vfs.EtcdDummyFileSystem"/>
         <fileEditorProvider implementation="com.github.dxahtepb.etcdidea.view.editor.EtcdEditorProvider"/>
         <projectService serviceImplementation="com.github.dxahtepb.etcdidea.persistence.EtcdConfigurationStateComponent"/>
+        <applicationService serviceImplementation="com.github.dxahtepb.etcdidea.service.auth.CredentialsService"/>
     </extensions>
 </idea-plugin>

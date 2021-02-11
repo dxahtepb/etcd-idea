@@ -8,7 +8,6 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
     var label by string("")
     var hosts by string("")
     var user by string("")
-    var password by string("")
 
     companion object Converter {
         fun toConfiguration(stored: EtcdServerConfigurationPersistenceModel) =
@@ -16,8 +15,7 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
                 stored.id.orEmpty(),
                 stored.hosts.orEmpty(),
                 stored.user.orEmpty(),
-                stored.label.orEmpty(),
-                stored.password.orEmpty()
+                stored.label.orEmpty()
             )
 
         fun fromConfiguration(conf: EtcdServerConfiguration) =
@@ -26,7 +24,6 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
                 hosts = conf.hosts
                 label = conf.label
                 user = conf.user
-                password = conf.password
             }
     }
 
