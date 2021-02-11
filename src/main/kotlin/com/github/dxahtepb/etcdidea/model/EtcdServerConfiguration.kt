@@ -11,6 +11,13 @@ data class EtcdServerConfiguration(
     val label: String,
     val password: String
 ) {
+    constructor(
+        hosts: String,
+        user: String,
+        label: String,
+        password: String
+    ) : this(generateNewUniqueId(), hosts, user, label, password)
+
     fun toURIs(): List<URI> = Util.toURIs(hosts.split(";"))
     override fun toString(): String = "$label@$hosts"
 

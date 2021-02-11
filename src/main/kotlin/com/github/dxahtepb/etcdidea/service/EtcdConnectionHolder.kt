@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.service
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.toByteSequence
 import io.etcd.jetcd.Client
 
 class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseable {

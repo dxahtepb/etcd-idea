@@ -10,11 +10,10 @@ import javax.swing.JComponent
 
 class ConfigureServerDialogWindow(
     project: Project?,
-    configuration: EtcdServerConfiguration? = null
+    private val configuration: EtcdServerConfiguration? = null
 ) : DialogWrapper(project) {
     lateinit var dialogPanel: DialogPanel
 
-    private val id: String = configuration?.id ?: EtcdServerConfiguration.generateNewUniqueId()
     var labelText: String = configuration?.label.orEmpty()
     var hosts: String = configuration?.hosts ?: "http://192.168.99.100:2379"
     var username: String = configuration?.user.orEmpty()
@@ -43,6 +42,11 @@ class ConfigureServerDialogWindow(
     }
 
     fun getConfiguration(): EtcdServerConfiguration {
-        return EtcdServerConfiguration(id, hosts, username, labelText, String(passwordUi.password))
+        return configuration?.copy(
+            hosts = hosts,
+            user = username,
+            label = labelText,
+            password = String(passwordUi.password)
+        ) ?: EtcdServerConfiguration(hosts, username, labelText, String(passwordUi.password))
     }
 }
