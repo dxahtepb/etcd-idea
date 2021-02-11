@@ -24,6 +24,16 @@ class EtcdConfigurationStateComponent :
 
     fun removeConfiguration(conf: EtcdServerConfiguration) = state.servers.remove(fromConfiguration(conf))
 
+    fun upsertConfiguration(conf: EtcdServerConfiguration) {
+        val confModel = fromConfiguration(conf)
+        val prevConfPlace = state.servers.indexOf(confModel)
+        if (prevConfPlace == -1) {
+            state.servers.add(confModel)
+        } else {
+            state.servers[prevConfPlace] = confModel
+        }
+    }
+
     fun getConfigurations() = state.servers.map(Converter::toConfiguration)
 
     companion object {

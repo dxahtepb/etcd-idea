@@ -10,6 +10,7 @@ import com.github.dxahtepb.etcdidea.view.addCenter
 import com.github.dxahtepb.etcdidea.view.addNorth
 import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
+import com.github.dxahtepb.etcdidea.view.browser.actions.EditServerAction
 import com.github.dxahtepb.etcdidea.view.getScrollComponent
 import com.github.dxahtepb.etcdidea.view.withNoBorder
 import com.intellij.openapi.actionSystem.ActionManager
@@ -66,6 +67,7 @@ class BrowserToolWindow(
         val actionGroup = DefaultActionGroup("BrowserActionGroup", false).apply {
             add(AddServerAction(::insertNewConfiguration))
             add(DeleteServerAction(::deleteSelectedConfiguration, ::isTreeSelected))
+            add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
         return JPanel(BorderLayout()).apply {
@@ -124,6 +126,18 @@ class BrowserToolWindow(
         val configuration = nodeToRemove.userObject as EtcdServerConfiguration
         treeModel.removeNodeFromParent(nodeToRemove)
         etcdState.removeConfiguration(configuration)
+    }
+
+    private fun editSelectedConfiguration() {
+        val nodeToEdit = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
+        val oldConfiguration = nodeToEdit.userObject as EtcdServerConfiguration
+
+        val configurationDialog = ConfigureServerDialogWindow(project, oldConfiguration)
+        if (configurationDialog.showAndGet()) {
+            val newConfiguration = configurationDialog.getConfiguration()
+            etcdState.upsertConfiguration(newConfiguration)
+            nodeToEdit.userObject = newConfiguration
+        }
     }
 
     private fun createTablePanel(): JComponent {

@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 
 class AddServerAction(private val callback: (configuration: EtcdServerConfiguration) -> Unit) :
-    AnAction("Add Etcd server", "Add Etcd server", AllIcons.General.Add) {
+    AnAction("Add Etcd Server", "Add Etcd server", AllIcons.General.Add) {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return

@@ -8,13 +8,19 @@ import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.layout.panel
 import javax.swing.JComponent
 
-class ConfigureServerDialogWindow(project: Project?) : DialogWrapper(project) {
+class ConfigureServerDialogWindow(
+    project: Project?,
+    configuration: EtcdServerConfiguration? = null
+) : DialogWrapper(project) {
     lateinit var dialogPanel: DialogPanel
-    var labelText: String = ""
-    var hosts: String = "http://192.168.99.100:2379"
-    var username: String = ""
 
-    val passwordUi = JBPasswordField()
+    private val id: String = configuration?.id ?: EtcdServerConfiguration.generateNewUniqueId()
+    var labelText: String = configuration?.label.orEmpty()
+    var hosts: String = configuration?.hosts ?: "http://192.168.99.100:2379"
+    var username: String = configuration?.user.orEmpty()
+    val passwordUi = JBPasswordField().apply {
+        setPasswordIsStored(configuration?.password.orEmpty().isNotEmpty())
+    }
 
     init {
         super.init()
@@ -37,6 +43,6 @@ class ConfigureServerDialogWindow(project: Project?) : DialogWrapper(project) {
     }
 
     fun getConfiguration(): EtcdServerConfiguration {
-        return EtcdServerConfiguration(hosts, username, labelText, String(passwordUi.password))
+        return EtcdServerConfiguration(id, hosts, username, labelText, String(passwordUi.password))
     }
 }

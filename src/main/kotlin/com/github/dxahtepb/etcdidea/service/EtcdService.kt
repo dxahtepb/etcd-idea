@@ -12,7 +12,6 @@ import io.etcd.jetcd.watch.WatchResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.asDeferred
 import java.net.URI
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 
 @Suppress("UnstableApiUsage")
@@ -143,4 +142,3 @@ private suspend fun <T> EtcdServerConfiguration.useConnection(action: suspend (c
 }
 
 private val ZERO_KEY: ByteSequence = ByteSequence.from(byteArrayOf(0.toByte()))
-internal fun String.toByteSequence() = ByteSequence.from(this, StandardCharsets.UTF_8)
