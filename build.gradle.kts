@@ -13,9 +13,9 @@ plugins {
     // gradle-changelog-plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
     id("org.jetbrains.changelog") version "0.5.0"
     // detekt linter - read more: https://detekt.github.io/detekt/gradle.html
-    id("io.gitlab.arturbosch.detekt") version "1.13.1"
+    id("io.gitlab.arturbosch.detekt") version "1.18.1"
     // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradle
-    id("org.jlleitschuh.gradle.ktlint") version "9.4.1"
+    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
     id("idea")
 }
 
@@ -43,7 +43,7 @@ repositories {
     jcenter()
 }
 dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.13.1")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.18.1")
     implementation("io.etcd:jetcd-core:$jetcdVersion") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
@@ -84,7 +84,7 @@ detekt {
 }
 
 ktlint {
-    version.set("0.39.0")
+    version.set("0.42.1")
     enableExperimentalRules.set(true)
     verbose.set(true)
     outputToConsole.set(true)
