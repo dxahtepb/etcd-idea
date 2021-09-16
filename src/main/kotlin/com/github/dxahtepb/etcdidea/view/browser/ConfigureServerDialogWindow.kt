@@ -85,7 +85,9 @@ class ConfigureServerDialogWindow(
                 textFieldWithBrowseButton(sslConfiguration::certificateKey, "Choose Certificate Key:", project)
             }.enableIfSsl()
             row("Certificate Authority") {
-                textFieldWithBrowseButton(sslConfiguration::certificateAuthority, "Choose Certificate Authority:", project)
+                textFieldWithBrowseButton(
+                    sslConfiguration::certificateAuthority, "Choose Certificate Authority:", project
+                )
             }.enableIfSsl()
         }
         return sslPanel
