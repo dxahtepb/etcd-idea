@@ -71,6 +71,7 @@ class BrowserToolWindow(
     private fun createToolbarPanel(): JComponent {
         val actionGroup = DefaultActionGroup("BrowserActionGroup", false).apply {
             add(AddServerAction(::insertNewConfiguration))
+            add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
         return JPanel(BorderLayout()).apply {
