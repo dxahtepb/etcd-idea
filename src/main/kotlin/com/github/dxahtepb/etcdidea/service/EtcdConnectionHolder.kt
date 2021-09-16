@@ -18,10 +18,7 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
     init {
         val builder = Client.builder()
         builder.endpoints(configuration.hosts)
-        if (configuration.user.isNotEmpty()) {
-            builder.user(configuration.user.toByteSequence())
-            builder.authUser(configuration)
-        }
+            .authUser(configuration)
         client = builder.build()
     }
 
@@ -35,9 +32,12 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
 private fun ClientBuilder.authUser(configuration: EtcdServerConfiguration): ClientBuilder {
     when (val sslConf = configuration.sslConfiguration) {
         is NoSslConfiguration -> {
-            val password = CredentialsService.instance.getPassword(PasswordKey(configuration.id))
-            if (password != null) {
-                this.password(password.toByteSequence())
+            if (configuration.user.isNotEmpty()) {
+                this.user(configuration.user.toByteSequence())
+                val password = CredentialsService.instance.getPassword(PasswordKey(configuration.id))
+                if (password != null) {
+                    this.password(password.toByteSequence())
+                }
             }
         }
         is EtcdSslConfiguration -> {

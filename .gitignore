@@ -1,3 +1,6 @@
 .gradle
 .idea
 build
+/workdir/
+/etcd_ssl/
+/certs/
