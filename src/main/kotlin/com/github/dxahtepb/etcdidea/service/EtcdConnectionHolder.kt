@@ -1,8 +1,6 @@
 package com.github.dxahtepb.etcdidea.service
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
-import com.github.dxahtepb.etcdidea.model.EtcdSslConfiguration
-import com.github.dxahtepb.etcdidea.model.NoSslConfiguration
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.toByteSequence
@@ -30,23 +28,21 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
 }
 
 private fun ClientBuilder.authUser(configuration: EtcdServerConfiguration): ClientBuilder {
-    when (val sslConf = configuration.sslConfiguration) {
-        is NoSslConfiguration -> {
-            if (configuration.user.isNotEmpty()) {
-                this.user(configuration.user.toByteSequence())
-                val password = CredentialsService.instance.getPassword(PasswordKey(configuration.id))
-                if (password != null) {
-                    this.password(password.toByteSequence())
-                }
+    val sslConf = configuration.sslConfiguration
+    if (sslConf.sslEnabled) {
+        val sslContext = GrpcSslContexts
+            .forClient()
+            .trustManager(createFile(sslConf.certificate))
+            .keyManager(createFile(sslConf.certificateAuthority), createFile(sslConf.certificateKey))
+            .build()
+        this.sslContext(sslContext)
+    } else {
+        if (configuration.user.isNotEmpty()) {
+            this.user(configuration.user.toByteSequence())
+            val password = CredentialsService.instance.getPassword(PasswordKey(configuration.id))
+            if (password != null) {
+                this.password(password.toByteSequence())
             }
-        }
-        is EtcdSslConfiguration -> {
-            val sslContext = GrpcSslContexts
-                .forClient()
-                .trustManager(createFile(sslConf.certificate))
-                .keyManager(createFile(sslConf.certificateAuthority), createFile(sslConf.certificateKey))
-                .build()
-            this.sslContext(sslContext)
         }
     }
     return this

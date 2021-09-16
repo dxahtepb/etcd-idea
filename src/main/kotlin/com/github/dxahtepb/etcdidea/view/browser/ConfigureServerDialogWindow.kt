@@ -1,9 +1,9 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
-import com.github.dxahtepb.etcdidea.model.EtcdSslConfiguration
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
+import com.github.dxahtepb.etcdidea.view.browser.model.EtcdSslViewModel
 import com.github.dxahtepb.etcdidea.view.isSelectedPredicate
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
@@ -28,17 +28,12 @@ class ConfigureServerDialogWindow(
     private lateinit var sslPanel: DialogPanel
 
     private var labelText: String = oldConfiguration?.label.orEmpty()
-    private var hosts: String = oldConfiguration?.hosts ?: "http://192.168.99.100:2379"
+    private var hosts: String = oldConfiguration?.hosts ?: "http://localhost:2379"
     private var username: String = oldConfiguration?.user.orEmpty()
-    private val passwordUi = JBPasswordField().apply {
-        oldConfiguration?.let {
-            val hasPassword = credentialsService.getPassword(PasswordKey(it.id)) != null
-            setPasswordIsStored(hasPassword)
-        }
-    }
+    private lateinit var passwordUi: JBPasswordField
 
     private lateinit var isSslEnabled: JBCheckBox
-    private val sslConfiguration = EtcdSslConfigurationData()
+    private val sslConfiguration = EtcdSslViewModel.fromConfiguration(oldConfiguration?.sslConfiguration)
 
     /**
      * Only valid after doOkAction() is called
@@ -66,7 +61,15 @@ class ConfigureServerDialogWindow(
         generalPanel = panel {
             row("Hosts:") { textField(::hosts, 20) }
             row("User:") { textField(::username, 20) }
-            row("Password:") { passwordUi(growX, pushX) }
+            row("Password:") {
+                passwordUi = JBPasswordField().apply {
+                    oldConfiguration?.let {
+                        val hasPassword = credentialsService.getPassword(PasswordKey(it.id)) != null
+                        setPasswordIsStored(hasPassword)
+                    }
+                }
+                passwordUi(growX, pushX)
+            }
         }
         return generalPanel
     }
@@ -74,7 +77,7 @@ class ConfigureServerDialogWindow(
     private fun createSslTab(): DialogPanel {
         sslPanel = panel {
             row {
-                checkBox("Enable SSL").also {
+                checkBox("Enable SSL", sslConfiguration::sslEnabled).also {
                     isSslEnabled = it.component
                 }
             }
@@ -127,12 +130,4 @@ class ConfigureServerDialogWindow(
     }
 
     private fun Row.enableIfSsl() = enableIf(isSslEnabled.isSelectedPredicate())
-}
-
-data class EtcdSslConfigurationData(
-    var certificate: String = "",
-    var certificateKey: String = "",
-    var certificateAuthority: String = ""
-) {
-    fun toConfiguration() = EtcdSslConfiguration(certificate, certificateKey, certificateAuthority)
 }

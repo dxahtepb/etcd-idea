@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.persistence
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.model.EtcdSslConfiguration
 import com.intellij.openapi.components.BaseState
 
 class EtcdServerConfigurationPersistenceModel : BaseState() {
@@ -8,7 +9,10 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
     var label by string("")
     var hosts by string("")
     var user by string("")
-    // todo: add ssl config (mb presistence model will differ from application model here)
+    var isSslEnabled by property(false)
+    var clientCertificate by string("")
+    var clientKey by string("")
+    var rootCertificate by string("")
 
     companion object Converter {
         fun toConfiguration(stored: EtcdServerConfigurationPersistenceModel) =
@@ -16,7 +20,13 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
                 stored.hosts.orEmpty(),
                 stored.user.orEmpty(),
                 stored.label.orEmpty(),
-                id = stored.id.orEmpty()
+                id = stored.id.orEmpty(),
+                sslConfiguration = EtcdSslConfiguration(
+                    sslEnabled = stored.isSslEnabled,
+                    certificate = stored.rootCertificate.orEmpty(),
+                    certificateAuthority = stored.clientCertificate.orEmpty(),
+                    certificateKey = stored.clientKey.orEmpty()
+                )
             )
 
         fun fromConfiguration(conf: EtcdServerConfiguration) =
@@ -25,6 +35,10 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
                 hosts = conf.hosts
                 label = conf.label
                 user = conf.user
+                isSslEnabled = conf.sslConfiguration.sslEnabled
+                rootCertificate = conf.sslConfiguration.certificate
+                clientCertificate = conf.sslConfiguration.certificateAuthority
+                clientKey = conf.sslConfiguration.certificateKey
             }
     }
 

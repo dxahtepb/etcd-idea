@@ -8,7 +8,7 @@ data class EtcdServerConfiguration(
     val hosts: String,
     val user: String,
     val label: String,
-    val sslConfiguration: EtcdAuthenticationConfiguration = NoSslConfiguration,
+    val sslConfiguration: EtcdSslConfiguration = EtcdSslConfiguration(),
     val id: String = generateNewUniqueId()
 ) {
     fun toURIs(): List<URI> = Util.toURIs(hosts.split(";"))
