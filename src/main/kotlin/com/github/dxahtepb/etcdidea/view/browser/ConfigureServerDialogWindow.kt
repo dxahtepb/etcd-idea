@@ -81,15 +81,15 @@ class ConfigureServerDialogWindow(
                     isSslEnabled = it.component
                 }
             }
-            row("Certificate") {
-                textFieldWithBrowseButton(sslConfiguration::certificate, "Choose Certificate:", project)
+            row("CA File:") {
+                textFieldWithBrowseButton(sslConfiguration::rootCertificate, "Choose CA Certificate:", project)
             }.enableIfSsl()
-            row("Certificate Key") {
-                textFieldWithBrowseButton(sslConfiguration::certificateKey, "Choose Certificate Key:", project)
+            row("Client Key File:") {
+                textFieldWithBrowseButton(sslConfiguration::clientKey, "Choose Client Key:", project)
             }.enableIfSsl()
-            row("Certificate Authority") {
+            row("Client Certificate File:") {
                 textFieldWithBrowseButton(
-                    sslConfiguration::certificateAuthority, "Choose Certificate Authority:", project
+                    sslConfiguration::clientKeyChain, "Choose Client Certificate:", project
                 )
             }.enableIfSsl()
         }

@@ -23,9 +23,9 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
                 id = stored.id.orEmpty(),
                 sslConfiguration = EtcdSslConfiguration(
                     sslEnabled = stored.isSslEnabled,
-                    certificate = stored.rootCertificate.orEmpty(),
-                    certificateAuthority = stored.clientCertificate.orEmpty(),
-                    certificateKey = stored.clientKey.orEmpty()
+                    rootCertificate = stored.rootCertificate.orEmpty(),
+                    clientKeyChain = stored.clientCertificate.orEmpty(),
+                    clientKey = stored.clientKey.orEmpty()
                 )
             )
 
@@ -36,9 +36,9 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
                 label = conf.label
                 user = conf.user
                 isSslEnabled = conf.sslConfiguration.sslEnabled
-                rootCertificate = conf.sslConfiguration.certificate
-                clientCertificate = conf.sslConfiguration.certificateAuthority
-                clientKey = conf.sslConfiguration.certificateKey
+                rootCertificate = conf.sslConfiguration.rootCertificate
+                clientCertificate = conf.sslConfiguration.clientKeyChain
+                clientKey = conf.sslConfiguration.clientKey
             }
     }
 

@@ -32,8 +32,8 @@ private fun ClientBuilder.authUser(configuration: EtcdServerConfiguration): Clie
     if (sslConf.sslEnabled) {
         val sslContext = GrpcSslContexts
             .forClient()
-            .trustManager(createFile(sslConf.certificate))
-            .keyManager(createFile(sslConf.certificateAuthority), createFile(sslConf.certificateKey))
+            .trustManager(createFile(sslConf.rootCertificate))
+            .keyManager(createFile(sslConf.clientKeyChain), createFile(sslConf.clientKey))
             .build()
         this.sslContext(sslContext)
     } else {
