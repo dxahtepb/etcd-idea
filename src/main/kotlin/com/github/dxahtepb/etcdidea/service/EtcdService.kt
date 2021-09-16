@@ -7,6 +7,7 @@ import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
 import io.etcd.jetcd.common.exception.CompactedException
 import io.etcd.jetcd.options.GetOption
+import io.etcd.jetcd.options.OptionsUtil
 import io.etcd.jetcd.options.WatchOption
 import io.etcd.jetcd.watch.WatchResponse
 import kotlinx.coroutines.*
@@ -19,12 +20,16 @@ class EtcdService {
     suspend fun listEntries(serverConfiguration: EtcdServerConfiguration, prefix: String? = null): EtcdKvEntries {
         return withContext(Dispatchers.IO) {
             val byteSequenceKey = prefix?.toByteSequence() ?: ZERO_KEY
-            val getOptionBuilder = GetOption.newBuilder().apply {
-                withRange(byteSequenceKey)
-                if (prefix != null) {
-                    isPrefix(true)
+            val getOptionBuilder = GetOption.newBuilder()
+                .withSortOrder(GetOption.SortOrder.ASCEND)
+                .apply {
+                    if (prefix != null) {
+                        withRange(OptionsUtil.prefixEndOf(byteSequenceKey))
+                    } else {
+                        withRange(byteSequenceKey)
+                    }
                 }
-            }
+
             EtcdKvEntries(fetchKeyValuesWithOptions(serverConfiguration, byteSequenceKey, getOptionBuilder.build()))
         }
     }
