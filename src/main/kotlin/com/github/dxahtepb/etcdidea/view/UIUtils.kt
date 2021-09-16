@@ -1,10 +1,12 @@
 package com.github.dxahtepb.etcdidea.view
 
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.layout.ComponentPredicate
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.Component
+import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -34,3 +36,11 @@ internal fun JPanel.addWest(content: JComponent) = add(content, BorderLayout.WES
 internal fun JPanel.addEast(content: JComponent) = add(content, BorderLayout.EAST)
 
 fun Component.getScrollComponent() = JBScrollPane(this)
+
+internal fun JCheckBox.isSelectedPredicate() = object : ComponentPredicate() {
+    override fun addListener(listener: (Boolean) -> Unit) {
+        addItemListener { listener(isSelected) }
+    }
+
+    override fun invoke() = isSelected
+}

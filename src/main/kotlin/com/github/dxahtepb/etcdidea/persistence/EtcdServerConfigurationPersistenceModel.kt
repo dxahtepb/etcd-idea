@@ -8,14 +8,15 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
     var label by string("")
     var hosts by string("")
     var user by string("")
+    // todo: add ssl config (mb presistence model will differ from application model here)
 
     companion object Converter {
         fun toConfiguration(stored: EtcdServerConfigurationPersistenceModel) =
             EtcdServerConfiguration(
-                stored.id.orEmpty(),
                 stored.hosts.orEmpty(),
                 stored.user.orEmpty(),
-                stored.label.orEmpty()
+                stored.label.orEmpty(),
+                id = stored.id.orEmpty()
             )
 
         fun fromConfiguration(conf: EtcdServerConfiguration) =

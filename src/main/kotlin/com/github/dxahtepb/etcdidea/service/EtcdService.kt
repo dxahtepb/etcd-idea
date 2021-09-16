@@ -20,10 +20,9 @@ class EtcdService {
         return withContext(Dispatchers.IO) {
             val byteSequenceKey = prefix?.toByteSequence() ?: ZERO_KEY
             val getOptionBuilder = GetOption.newBuilder().apply {
+                withRange(byteSequenceKey)
                 if (prefix != null) {
-                    withPrefix(byteSequenceKey)
-                } else {
-                    withRange(byteSequenceKey)
+                    isPrefix(true)
                 }
             }
             EtcdKvEntries(fetchKeyValuesWithOptions(serverConfiguration, byteSequenceKey, getOptionBuilder.build()))

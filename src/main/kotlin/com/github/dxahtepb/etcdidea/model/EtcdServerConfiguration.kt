@@ -5,17 +5,12 @@ import io.etcd.jetcd.Util
 import java.net.URI
 
 data class EtcdServerConfiguration(
-    val id: String,
     val hosts: String,
     val user: String,
-    val label: String
+    val label: String,
+    val sslConfiguration: EtcdAuthenticationConfiguration = NoSslConfiguration,
+    val id: String = generateNewUniqueId()
 ) {
-    constructor(
-        hosts: String,
-        user: String,
-        label: String
-    ) : this(generateNewUniqueId(), hosts, user, label)
-
     fun toURIs(): List<URI> = Util.toURIs(hosts.split(";"))
     override fun toString(): String = "$label@$hosts"
 

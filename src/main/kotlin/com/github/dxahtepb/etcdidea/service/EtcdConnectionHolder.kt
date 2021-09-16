@@ -1,10 +1,16 @@
 package com.github.dxahtepb.etcdidea.service
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.model.EtcdSslConfiguration
+import com.github.dxahtepb.etcdidea.model.NoSslConfiguration
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.toByteSequence
+import com.intellij.util.text.nullize
 import io.etcd.jetcd.Client
+import io.etcd.jetcd.ClientBuilder
+import io.grpc.netty.GrpcSslContexts
+import java.io.File
 
 class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseable {
     private var client: Client
@@ -14,10 +20,7 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
         builder.endpoints(configuration.hosts)
         if (configuration.user.isNotEmpty()) {
             builder.user(configuration.user.toByteSequence())
-            val password = CredentialsService.instance.getPassword(PasswordKey(configuration.id))
-            if (password != null) {
-                builder.password(password.toByteSequence())
-            }
+            builder.authUser(configuration)
         }
         client = builder.build()
     }
@@ -28,3 +31,25 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
         client.close()
     }
 }
+
+private fun ClientBuilder.authUser(configuration: EtcdServerConfiguration): ClientBuilder {
+    when (val sslConf = configuration.sslConfiguration) {
+        is NoSslConfiguration -> {
+            val password = CredentialsService.instance.getPassword(PasswordKey(configuration.id))
+            if (password != null) {
+                this.password(password.toByteSequence())
+            }
+        }
+        is EtcdSslConfiguration -> {
+            val sslContext = GrpcSslContexts
+                .forClient()
+                .trustManager(createFile(sslConf.certificate))
+                .keyManager(createFile(sslConf.certificateAuthority), createFile(sslConf.certificateKey))
+                .build()
+            this.sslContext(sslContext)
+        }
+    }
+    return this
+}
+
+private fun createFile(path: String): File? = path.nullize()?.let { File(it) }
