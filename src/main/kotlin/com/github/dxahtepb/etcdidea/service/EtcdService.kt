@@ -6,13 +6,13 @@ import com.intellij.openapi.project.Project
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
 import io.etcd.jetcd.common.exception.CompactedException
+import io.etcd.jetcd.maintenance.AlarmType
 import io.etcd.jetcd.options.GetOption
 import io.etcd.jetcd.options.OptionsUtil
 import io.etcd.jetcd.options.WatchOption
 import io.etcd.jetcd.watch.WatchResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.asDeferred
-import java.net.URI
 import java.util.concurrent.CompletableFuture
 
 @Suppress("UnstableApiUsage")
@@ -125,10 +125,30 @@ class EtcdService {
         return future
     }
 
+    suspend fun getAllAlarms(serverConfiguration: EtcdServerConfiguration): EtcdAlarms? {
+        return withContext(Dispatchers.IO) {
+            serverConfiguration.useConnection { client: Client ->
+                val alarms = client.maintenanceClient.listAlarms()
+                    .thenApply { response ->
+                        response.alarms.map {
+                            val alarmType = when (it.alarmType) {
+                                AlarmType.NOSPACE -> EtcdAlarmType.NOSPACE
+                                else -> EtcdAlarmType.UNRECOGNIZED
+                            }
+                            EtcdAlarmMember(it.memberId, alarmType)
+                        }
+                    }
+                    .asDeferred().await()
+                EtcdAlarms(alarms)
+            }
+        }
+    }
+
     suspend fun getMemberStatus(serverConfiguration: EtcdServerConfiguration): EtcdMemberStatus? {
         return withContext(Dispatchers.IO) {
             serverConfiguration.useConnection { client: Client ->
-                client.maintenanceClient.statusMember(URI(serverConfiguration.hosts))
+                val uri = serverConfiguration.toURIs().first()
+                client.maintenanceClient.statusMember(uri)
                     .thenApply { EtcdMemberStatus.fromResponse(it) }
                     .asDeferred().await()
             }

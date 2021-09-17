@@ -11,10 +11,14 @@ import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
 import com.github.dxahtepb.etcdidea.view.addCenter
 import com.github.dxahtepb.etcdidea.view.addNorth
 import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
+import com.github.dxahtepb.etcdidea.view.browser.actions.CheckHealthAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.EditServerAction
 import com.github.dxahtepb.etcdidea.view.getScrollComponent
 import com.github.dxahtepb.etcdidea.view.withNoBorder
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
+import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -71,7 +75,9 @@ class BrowserToolWindow(
     private fun createToolbarPanel(): JComponent {
         val actionGroup = DefaultActionGroup("BrowserActionGroup", false).apply {
             add(AddServerAction(::insertNewConfiguration))
+            addSeparator()
             add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
+            add(CheckHealthAction(::checkHealthSelectedConfiguration, ::isTreeSelected))
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
         return JPanel(BorderLayout()).apply {
@@ -102,6 +108,7 @@ class BrowserToolWindow(
         object : PopupHandler() {
             val actionGroup = DefaultActionGroup("BrowserPopupActionGroup", true).apply {
                 add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
+                add(CheckHealthAction(::checkHealthSelectedConfiguration, ::isTreeSelected))
                 addSeparator()
                 add(DeleteServerAction(::deleteSelectedConfiguration, ::isTreeSelected))
             }
@@ -145,6 +152,34 @@ class BrowserToolWindow(
         treeModel.removeNodeFromParent(nodeToRemove)
         etcdState.removeConfiguration(configuration)
         CredentialsService.instance.forgetPassword(PasswordKey(configuration.id))
+    }
+
+    private fun checkHealthSelectedConfiguration() {
+        val selected = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
+        val configuration = selected.userObject as EtcdServerConfiguration
+        GlobalScope.launch(UI_DISPATCHER) {
+            etcdService.getAllAlarms(configuration)?.let { alarms ->
+                if (alarms.alarms.isEmpty()) {
+                    Notifications.Bus.notify(
+                        Notification(
+                            "Etcd Browser",
+                            "Etcd health check",
+                            "Etcd cluster has no raised alarms",
+                            NotificationType.INFORMATION
+                        )
+                    )
+                } else {
+                    Notifications.Bus.notify(
+                        Notification(
+                            "Etcd Browser",
+                            "Etcd health check",
+                            "Etcd cluster has ${alarms.alarms.size} alarms",
+                            NotificationType.WARNING
+                        )
+                    )
+                }
+            }
+        }
     }
 
     private fun editSelectedConfiguration() {
