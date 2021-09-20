@@ -122,10 +122,9 @@ class BrowserToolWindow(
 
         myTree.selectionModel.addTreeSelectionListener {
             val selectedConfiguration = getCurrentConnection()
+            clearStatsTable()
             if (selectedConfiguration != null) {
                 updateStatsTable(selectedConfiguration)
-            } else {
-                clearStatsTable()
             }
         }
 
