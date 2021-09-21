@@ -37,7 +37,7 @@ internal suspend fun <V> executeWithErrorSink(sink: (Exception) -> Unit, action:
 internal val notificationErrorSink = { e: Throwable ->
     val cause = getCause(e)
     if (!ApplicationManager.getApplication().isUnitTestMode) {
-        LOG.error(cause)
+        LOG.warn(cause)
         Notifications.Bus.notify(
             Notification(
                 "Etcd Browser",

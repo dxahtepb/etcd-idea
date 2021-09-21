@@ -4,11 +4,14 @@ import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.toByteSequence
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.text.nullize
 import io.etcd.jetcd.Client
 import io.etcd.jetcd.ClientBuilder
 import io.grpc.netty.GrpcSslContexts
 import java.io.File
+
+private val LOG = logger<EtcdConnectionHolder>()
 
 class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseable {
     private var client: Client
@@ -18,11 +21,13 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
         builder.endpoints(configuration.hosts)
             .authUser(configuration)
         client = builder.build()
+        LOG.trace("Client $client built")
     }
 
     suspend fun <T> execute(action: suspend (client: Client) -> T?) = action.invoke(client)
 
     override fun close() {
+        LOG.trace("Client $client closed")
         client.close()
     }
 }
