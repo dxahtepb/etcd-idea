@@ -31,6 +31,7 @@ class EtcdConfigurationStateComponent :
             state.servers.add(confModel)
         } else {
             state.servers[prevConfPlace] = confModel
+            state.intIncrementModificationCount()
         }
     }
 
