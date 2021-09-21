@@ -101,7 +101,9 @@ class ConfigureServerDialogWindow(
             }.enableIfSsl()
             row("Client Certificate File:") {
                 textFieldWithBrowseButton(
-                    sslConfiguration::clientKeyChain, "Choose Client Certificate:", project
+                    sslConfiguration::clientKeyChain,
+                    "Choose Client Certificate:",
+                    project
                 )
             }.enableIfSsl()
         }
