@@ -19,6 +19,8 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
     init {
         val builder = Client.builder()
         builder.endpoints(configuration.hosts)
+            .retryMaxDuration(configuration.timeouts.applicationTimeout)
+            .keepaliveWithoutCalls(false)
             .authUser(configuration)
         client = builder.build()
         LOG.trace("Client $client built")

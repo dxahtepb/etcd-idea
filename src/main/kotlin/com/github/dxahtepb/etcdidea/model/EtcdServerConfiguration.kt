@@ -8,6 +8,7 @@ data class EtcdServerConfiguration(
     val hosts: String,
     val user: String,
     val label: String,
+    val timeouts: EtcdTimeoutConfiguration,
     val sslConfiguration: EtcdSslConfiguration = EtcdSslConfiguration(),
     val id: String = generateNewUniqueId()
 ) {

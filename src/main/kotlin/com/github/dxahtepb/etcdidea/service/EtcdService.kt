@@ -42,14 +42,17 @@ class EtcdService {
         return serverConfiguration.useConnection { client ->
             client.kvClient.get(key, getOption)
                 .thenApply { kvClient -> kvClient.kvs.map { EtcdKeyValue.fromKeyValue(it) } }
-                .asDeferred().await()
+                .asDeferred()
+                .awaitOrThrow(serverConfiguration.timeouts.applicationTimeout)
         } ?: emptyList()
     }
 
     suspend fun putNewEntry(serverConfiguration: EtcdServerConfiguration, kv: EtcdKeyValue) {
         withContext(Dispatchers.IO) {
             serverConfiguration.useConnection { client ->
-                client.kvClient.put(kv.key.toByteSequence(), kv.value.toByteSequence()).asDeferred().await()
+                client.kvClient.put(kv.key.toByteSequence(), kv.value.toByteSequence())
+                    .asDeferred()
+                    .awaitOrThrow(serverConfiguration.timeouts.applicationTimeout)
             }
         }
     }
@@ -57,7 +60,9 @@ class EtcdService {
     suspend fun deleteEntry(serverConfiguration: EtcdServerConfiguration, key: String) {
         withContext(Dispatchers.IO) {
             serverConfiguration.useConnection { client ->
-                client.kvClient.delete(key.toByteSequence()).asDeferred().await()
+                client.kvClient.delete(key.toByteSequence())
+                    .asDeferred()
+                    .awaitOrThrow(serverConfiguration.timeouts.applicationTimeout)
             }
         }
     }
@@ -70,7 +75,8 @@ class EtcdService {
         return withContext(Dispatchers.IO) {
             val revision = executeWithErrorSink(notificationErrorSink) {
                 getLeastAvailableRevision(serverConfiguration, key)
-                    .asDeferred().await(1000, null)
+                    .asDeferred()
+                    .await(serverConfiguration.timeouts.applicationTimeout, null)
             } ?: return@withContext null
             val watchOptions = WatchOption.newBuilder().withRevision(revision).build()
             val connection = EtcdConnectionHolder(serverConfiguration)
@@ -138,7 +144,7 @@ class EtcdService {
                             EtcdAlarmMember(it.memberId, alarmType)
                         }
                     }
-                    .asDeferred().await()
+                    .asDeferred().awaitOrThrow(serverConfiguration.timeouts.applicationTimeout)
                 EtcdAlarms(alarms)
             }
         }
@@ -148,9 +154,10 @@ class EtcdService {
         return withContext(Dispatchers.IO) {
             serverConfiguration.useConnection { client: Client ->
                 val uri = serverConfiguration.toURIs().first()
-                client.maintenanceClient.statusMember(uri)
+                val res = client.maintenanceClient.statusMember(uri)
                     .thenApply { EtcdMemberStatus.fromResponse(it) }
-                    .asDeferred().await()
+                    .asDeferred().awaitOrThrow(serverConfiguration.timeouts.applicationTimeout)
+                res
             }
         }
     }
@@ -161,8 +168,9 @@ class EtcdService {
 }
 
 private suspend fun <T> EtcdServerConfiguration.useConnection(action: suspend (client: Client) -> T?): T? {
-    val connection = EtcdConnectionHolder(this)
-    return connection.useAsync { it.execute(action.withNotificationErrorSink()) }
+    return EtcdConnectionHolder(this).useAsync {
+        it.execute(action.withNotificationErrorSink())
+    }
 }
 
 private val ZERO_KEY: ByteSequence = ByteSequence.from(byteArrayOf(0.toByte()))

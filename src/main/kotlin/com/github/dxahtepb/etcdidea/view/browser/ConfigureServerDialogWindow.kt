@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.model.EtcdTimeoutConfiguration
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.view.browser.model.EtcdSslViewModel
@@ -15,6 +16,7 @@ import com.intellij.ui.layout.Row
 import com.intellij.ui.layout.enableIf
 import com.intellij.ui.layout.panel
 import com.intellij.util.text.nullize
+import java.time.Duration
 import javax.swing.JComponent
 
 class ConfigureServerDialogWindow(
@@ -31,6 +33,10 @@ class ConfigureServerDialogWindow(
     private var hosts: String = oldConfiguration?.hosts ?: "http://localhost:2379"
     private var username: String = oldConfiguration?.user.orEmpty()
     private lateinit var passwordUi: JBPasswordField
+    private var timeoutMillis: Int = oldConfiguration?.timeouts
+        ?.applicationTimeout
+        ?.toMillis()
+        ?.toInt() ?: 10_000 // 10 seconds
 
     private lateinit var isSslEnabled: JBCheckBox
     private val sslConfiguration = EtcdSslViewModel.fromConfiguration(oldConfiguration?.sslConfiguration)
@@ -70,6 +76,12 @@ class ConfigureServerDialogWindow(
                 }
                 passwordUi(growX, pushX)
             }
+            row("Timeout:") {
+                cell {
+                    intTextField(::timeoutMillis, 10)
+                    commentNoWrap("ms")
+                }
+            }
         }
         return generalPanel
     }
@@ -100,16 +112,19 @@ class ConfigureServerDialogWindow(
         generalPanel.apply()
         sslPanel.apply()
         dialogPanel.apply()
+        val duration = Duration.ofMillis(timeoutMillis.toLong())
         myConfiguration = oldConfiguration?.copy(
             hosts = hosts,
             user = username,
             label = labelText,
+            timeouts = EtcdTimeoutConfiguration(duration),
             sslConfiguration = sslConfiguration.toConfiguration()
         ) ?: EtcdServerConfiguration(
             hosts,
             username,
             labelText,
-            sslConfiguration.toConfiguration()
+            EtcdTimeoutConfiguration(duration),
+            sslConfiguration = sslConfiguration.toConfiguration()
         )
         savePassword()
         super.doOKAction()
