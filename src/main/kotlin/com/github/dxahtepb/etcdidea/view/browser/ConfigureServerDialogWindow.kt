@@ -9,9 +9,11 @@ import com.github.dxahtepb.etcdidea.view.isSelectedPredicate
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTabbedPane
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.layout.Row
 import com.intellij.ui.layout.enableIf
 import com.intellij.ui.layout.panel
@@ -33,6 +35,7 @@ class ConfigureServerDialogWindow(
     private var hosts: String = oldConfiguration?.hosts ?: "http://localhost:2379"
     private var username: String = oldConfiguration?.user.orEmpty()
     private lateinit var passwordUi: JBPasswordField
+    private lateinit var timeoutField: JBTextField
     private var timeoutMillis: Int = oldConfiguration?.timeouts
         ?.applicationTimeout
         ?.toMillis()
@@ -65,8 +68,8 @@ class ConfigureServerDialogWindow(
 
     private fun createGeneralTab(): DialogPanel {
         generalPanel = panel {
-            row("Hosts:") { textField(::hosts, 20) }
-            row("User:") { textField(::username, 20) }
+            row("Hosts:") { textField(::hosts) }
+            row("User:") { textField(::username) }
             row("Password:") {
                 passwordUi = JBPasswordField().apply {
                     oldConfiguration?.let {
@@ -78,7 +81,7 @@ class ConfigureServerDialogWindow(
             }
             row("Timeout:") {
                 cell {
-                    intTextField(::timeoutMillis, 10)
+                    timeoutField = intTextField(::timeoutMillis, 10).component
                     commentNoWrap("ms")
                 }
             }
@@ -108,6 +111,15 @@ class ConfigureServerDialogWindow(
             }.enableIfSsl()
         }
         return sslPanel
+    }
+
+    override fun doValidate(): ValidationInfo? {
+        generalPanel.apply()
+        dialogPanel.apply()
+        if (timeoutMillis <= 0) {
+            return ValidationInfo("Please enter a valid timeout", timeoutField)
+        }
+        return null
     }
 
     override fun doOKAction() {
