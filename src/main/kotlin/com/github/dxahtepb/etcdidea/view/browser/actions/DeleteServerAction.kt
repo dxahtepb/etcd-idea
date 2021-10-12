@@ -3,14 +3,15 @@ package com.github.dxahtepb.etcdidea.view.browser.actions
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 
-class DeleteServerAction(private val callback: () -> Unit, private val isActive: () -> Boolean) :
+class DeleteServerAction :
     AnAction("Remove", "Delete selected server", null) {
 
     override fun actionPerformed(e: AnActionEvent) {
-        callback()
+        e.getData(EtcdBrowserActionDataKeys.ETCD_BROWSER_TOOL_WINDOW)?.deleteSelectedConfiguration()
     }
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = isActive()
+        e.presentation.isEnabled =
+            e.getData(EtcdBrowserActionDataKeys.ETCD_BROWSER_TOOL_WINDOW)?.isTreeSelected() ?: false
     }
 }

@@ -7,15 +7,11 @@ import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
-import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
-import com.github.dxahtepb.etcdidea.view.addCenter
-import com.github.dxahtepb.etcdidea.view.addNorth
+import com.github.dxahtepb.etcdidea.view.*
 import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.CheckHealthAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.EditServerAction
-import com.github.dxahtepb.etcdidea.view.getScrollComponent
-import com.github.dxahtepb.etcdidea.view.withNoBorder
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
@@ -74,10 +70,10 @@ class BrowserToolWindow(
 
     private fun createToolbarPanel(): JComponent {
         val actionGroup = DefaultActionGroup("BrowserActionGroup", false).apply {
-            add(AddServerAction(::insertNewConfiguration))
+            add(AddServerAction())
             addSeparator()
-            add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
-            add(CheckHealthAction(::checkHealthSelectedConfiguration, ::isTreeSelected))
+            add(EditServerAction())
+            add(CheckHealthAction())
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
         return JPanel(BorderLayout()).apply {
@@ -107,10 +103,10 @@ class BrowserToolWindow(
 
         object : PopupHandler() {
             val actionGroup = DefaultActionGroup("BrowserPopupActionGroup", true).apply {
-                add(EditServerAction(::editSelectedConfiguration, ::isTreeSelected))
-                add(CheckHealthAction(::checkHealthSelectedConfiguration, ::isTreeSelected))
+                add(EditServerAction())
+                add(CheckHealthAction())
                 addSeparator()
-                add(DeleteServerAction(::deleteSelectedConfiguration, ::isTreeSelected))
+                add(DeleteServerAction())
             }
 
             override fun invokePopup(comp: Component?, x: Int, y: Int) {
@@ -140,12 +136,14 @@ class BrowserToolWindow(
         myTree.scrollPathToVisible(TreePath(childNode.path))
     }
 
-    private fun insertNewConfiguration(configuration: EtcdServerConfiguration) {
+    internal fun isTreeSelected() = myTree.selectionCount != 0
+
+    internal fun insertNewConfiguration(configuration: EtcdServerConfiguration) {
         etcdState.addEtcdConfiguration(configuration)
         addConfigurationToTree(configuration)
     }
 
-    private fun deleteSelectedConfiguration() {
+    internal fun deleteSelectedConfiguration() {
         val nodeToRemove = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
         val configuration = nodeToRemove.userObject as EtcdServerConfiguration
         treeModel.removeNodeFromParent(nodeToRemove)
@@ -153,7 +151,7 @@ class BrowserToolWindow(
         CredentialsService.instance.forgetPassword(PasswordKey(configuration.id))
     }
 
-    private fun checkHealthSelectedConfiguration() {
+    internal fun checkHealthSelectedConfiguration() {
         val selected = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
         val configuration = selected.userObject as EtcdServerConfiguration
         GlobalScope.launch(UI_DISPATCHER) {
@@ -181,7 +179,7 @@ class BrowserToolWindow(
         }
     }
 
-    private fun editSelectedConfiguration() {
+    internal fun editSelectedConfiguration() {
         val nodeToEdit = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
         val oldConfiguration = nodeToEdit.userObject as EtcdServerConfiguration
 
@@ -213,8 +211,6 @@ class BrowserToolWindow(
             statsModel.clear()
         }
     }
-
-    fun isTreeSelected() = myTree.selectionCount != 0
 
     private fun getCurrentConnection(): EtcdServerConfiguration? {
         val node = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode
