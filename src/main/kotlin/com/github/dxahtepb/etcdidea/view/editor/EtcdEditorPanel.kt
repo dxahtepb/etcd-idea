@@ -63,11 +63,11 @@ class EtcdEditorPanel(
 
     private fun createKeyManagementToolbarPanel(): JComponent {
         val actionGroup = DefaultActionGroup("EtcdKeyManagementActions", false).also {
-            it.add(AddKeyAction(this))
-            it.add(DeleteKeyAction(this))
-            it.add(EditKeyAction(this))
+            it.add(AddKeyAction())
+            it.add(DeleteKeyAction())
+            it.add(EditKeyAction())
             it.addSeparator()
-            it.add(RefreshTableAction(this))
+            it.add(RefreshTableAction())
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdKeyManagement", actionGroup, true)
             .apply {

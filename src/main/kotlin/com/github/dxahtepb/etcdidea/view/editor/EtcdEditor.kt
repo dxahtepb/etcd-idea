@@ -13,13 +13,17 @@ import javax.swing.JComponent
 class EtcdEditor(project: Project, file: EtcdDummyVirtualFile) :
     FileEditor, UserDataHolderBase() {
 
-    private val editorPanel = EtcdEditorPanel(project, file.configuration, EtcdService.getInstance(project))
+    var disposed: Boolean = false
 
-    override fun dispose() = Unit
+    internal val editorPanel = EtcdEditorPanel(project, file.configuration, EtcdService.getInstance(project))
+
+    override fun dispose() {
+        disposed = true
+    }
 
     override fun getComponent(): JComponent = editorPanel.getContent()
 
-    override fun getPreferredFocusedComponent(): JComponent? = editorPanel.getContent()
+    override fun getPreferredFocusedComponent(): JComponent = editorPanel.getContent()
 
     override fun getName(): String = "Etcd DataGrid"
 
@@ -27,7 +31,7 @@ class EtcdEditor(project: Project, file: EtcdDummyVirtualFile) :
 
     override fun isModified(): Boolean = false
 
-    override fun isValid(): Boolean = true
+    override fun isValid(): Boolean = !disposed
 
     override fun addPropertyChangeListener(listener: PropertyChangeListener) = Unit
 
