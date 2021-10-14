@@ -151,11 +151,10 @@ class ConfigureServerDialogWindow(
     private fun savePassword() {
         val passwordKey = PasswordKey(myConfiguration.id)
         val password = passwordUi.password.nullize()
-        if (password == null) {
-            credentialsService.forgetPassword(passwordKey)
-        } else {
+        if (password != null) {
             credentialsService.storePassword(passwordKey, password)
         }
+        password?.fill(0.toChar())
     }
 
     private fun Row.enableIfSsl() = enableIf(isSslEnabled.isSelectedPredicate())
