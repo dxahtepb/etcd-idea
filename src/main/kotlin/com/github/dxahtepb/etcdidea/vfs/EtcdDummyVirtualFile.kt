@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.vfs
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileSystem
 import java.io.InputStream
@@ -11,6 +12,8 @@ class EtcdDummyVirtualFile(val configuration: EtcdServerConfiguration) : Virtual
     override fun getName(): String = "${configuration.label}@${configuration.hosts}"
 
     override fun getFileSystem(): VirtualFileSystem = EtcdDummyFileSystem.INSTANCE
+
+    override fun getFileType(): FileType = EtcdFakeFileType
 
     override fun getPath(): String = name
 
