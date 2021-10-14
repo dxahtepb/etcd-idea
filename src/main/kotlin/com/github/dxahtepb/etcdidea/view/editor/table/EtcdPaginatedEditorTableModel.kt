@@ -24,7 +24,8 @@ class EtcdPaginatedEditorTableModel(data: EtcdKvEntries) : AbstractTableModel() 
     var pageOffset = 0
         set(value) {
             field = when {
-                value < 0 -> 0
+                getPageCount() == 0 -> 0
+                value <= 0 -> 0
                 value >= getPageCount() -> getPageCount() - 1
                 else -> value
             }
