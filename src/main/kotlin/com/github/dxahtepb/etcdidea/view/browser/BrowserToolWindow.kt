@@ -75,9 +75,13 @@ class BrowserToolWindow(
             add(EditServerAction())
             add(CheckHealthAction())
         }
-        val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdBrowser", actionGroup, true)
         return JPanel(BorderLayout()).apply {
-            addCenter(actionToolbar.component)
+            addCenter(
+                ActionManager.getInstance()
+                    .createActionToolbar("EtcdBrowser", actionGroup, true)
+                    .also { it.setTargetComponent(this) }
+                    .component
+            )
         }
     }
 
