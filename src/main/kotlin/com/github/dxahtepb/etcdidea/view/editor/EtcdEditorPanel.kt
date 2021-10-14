@@ -2,6 +2,7 @@ package com.github.dxahtepb.etcdidea.view.editor
 
 import com.github.dxahtepb.etcdidea.UI_DISPATCHER
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
+import com.github.dxahtepb.etcdidea.model.EtcdKvEntries
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.view.*
@@ -9,19 +10,21 @@ import com.github.dxahtepb.etcdidea.view.editor.actions.AddKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.DeleteKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.EditKeyAction
 import com.github.dxahtepb.etcdidea.view.editor.actions.RefreshTableAction
+import com.github.dxahtepb.etcdidea.view.editor.table.EtcdEditorTablePaginator
+import com.github.dxahtepb.etcdidea.view.editor.table.EtcdPaginatedEditorTableModel
+import com.github.dxahtepb.etcdidea.view.editor.table.actions.EtcdPaginationActionDataKeys
+import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.components.panels.NonOpaquePanel
 import com.intellij.ui.table.JBTable
 import com.intellij.util.text.nullize
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.awt.BorderLayout
-import java.awt.FlowLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -32,9 +35,10 @@ class EtcdEditorPanel(
 ) {
     private val rootPanel: JPanel = JPanel(BorderLayout())
 
-    private lateinit var resultsModel: EtcdTableModel
+    private lateinit var resultsModel: EtcdPaginatedEditorTableModel
     private lateinit var resultTable: JBTable
     private lateinit var searchPrefixField: JBTextField
+    private lateinit var paginator: EtcdEditorTablePaginator
 
     init {
         rootPanel.apply {
@@ -47,10 +51,18 @@ class EtcdEditorPanel(
     fun getContent() = rootPanel
 
     private fun createTablePanel(): JComponent {
-        resultsModel = EtcdTableModel()
+        resultsModel = EtcdPaginatedEditorTableModel(EtcdKvEntries(emptyList()))
         resultTable = SingleSelectionTable(resultsModel)
         return JPanel(BorderLayout()).apply {
             addCenter(resultTable.getScrollComponent().withNoBorder())
+        }.also {
+            paginator = EtcdEditorTablePaginator(resultTable)
+            DataManager.registerDataProvider(rootPanel) { dataId ->
+                when {
+                    EtcdPaginationActionDataKeys.ETCD_TABLE_PAGINATOR_CONTROL.`is`(dataId) -> paginator.control
+                    else -> null
+                }
+            }
         }
     }
 
@@ -62,38 +74,32 @@ class EtcdEditorPanel(
     }
 
     private fun createKeyManagementToolbarPanel(): JComponent {
-        val actionGroup = DefaultActionGroup("EtcdKeyManagementActions", false).also {
-            it.add(AddKeyAction())
-            it.add(DeleteKeyAction())
-            it.add(EditKeyAction())
-            it.addSeparator()
-            it.add(RefreshTableAction())
+        val actionGroup = DefaultActionGroup("EtcdKeyManagementActions", false).apply {
+            add(AddKeyAction())
+            add(DeleteKeyAction())
+            add(EditKeyAction())
+            addSeparator()
+            add(RefreshTableAction())
         }
-        val actionToolbar = ActionManager.getInstance().createActionToolbar("EtcdKeyManagement", actionGroup, true)
-            .apply {
+        return ActionManager.getInstance().createActionToolbar("EtcdKeyManagement", actionGroup, true)
+            .run {
                 layoutPolicy = ActionToolbar.AUTO_LAYOUT_POLICY
+                setTargetComponent(rootPanel)
+                component.apply {
+                    isOpaque = false
+                    border = JBUI.Borders.empty()
+                }
             }
-        actionToolbar.setTargetComponent(rootPanel)
-        return actionToolbar.component.apply {
-            isOpaque = false
-            border = JBUI.Borders.empty()
-        }
     }
 
     private fun createSearchToolbarPanel(): JComponent {
-        searchPrefixField = JBTextField("", 19).apply {
-            emptyText.text = "<Key prefix>"
-            addActionListener {
-                updateResults()
-            }
-        }
-        return NonOpaquePanel(
-            FlowLayout().apply {
-                hgap = 0
-                vgap = 0
-            }
-        ).apply {
-            add(searchPrefixField)
+        return noOpaquePanel().apply {
+            searchPrefixField = JBTextField("", 19).apply {
+                emptyText.text = "<Key prefix>"
+                addActionListener {
+                    updateResults()
+                }
+            }.also { add(it) }
         }
     }
 
@@ -135,7 +141,7 @@ class EtcdEditorPanel(
         val prefix = searchPrefixField.text
         GlobalScope.launch(UI_DISPATCHER) {
             val entries = etcdService.listEntries(configuration, prefix.nullize())
-            resultsModel.setDataVector(entries)
+            resultsModel.data = entries
         }
     }
 
