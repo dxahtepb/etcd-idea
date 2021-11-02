@@ -153,7 +153,8 @@ class EtcdService {
     suspend fun getMemberStatus(serverConfiguration: EtcdServerConfiguration): EtcdMemberStatus? {
         return withContext(Dispatchers.IO) {
             serverConfiguration.useConnection { client: Client ->
-                val uri = serverConfiguration.toURIs().first()
+                // todo: run for all members?
+                val uri = serverConfiguration.hosts.asURIs().first()
                 val res = client.maintenanceClient.statusMember(uri)
                     .thenApply { EtcdMemberStatus.fromResponse(it) }
                     .asDeferred().awaitOrThrow(serverConfiguration.timeouts.applicationTimeout)

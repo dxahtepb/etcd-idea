@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.model.EtcdServerHosts
 import com.github.dxahtepb.etcdidea.model.EtcdTimeoutConfiguration
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
@@ -32,7 +33,7 @@ class ConfigureServerDialogWindow(
     private lateinit var sslPanel: DialogPanel
 
     private var labelText: String = oldConfiguration?.label.orEmpty()
-    private var hosts: String = oldConfiguration?.hosts ?: "http://localhost:2379"
+    private var hosts: String = oldConfiguration?.hosts?.asString() ?: "http://localhost:2379"
     private var username: String = oldConfiguration?.user.orEmpty()
     private lateinit var passwordUi: JBPasswordField
     private lateinit var timeoutField: JBTextField
@@ -128,13 +129,13 @@ class ConfigureServerDialogWindow(
         dialogPanel.apply()
         val duration = Duration.ofMillis(timeoutMillis.toLong())
         myConfiguration = oldConfiguration?.copy(
-            hosts = hosts,
+            hosts = EtcdServerHosts.create(hosts),
             user = username,
             label = labelText,
             timeouts = EtcdTimeoutConfiguration(duration),
             sslConfiguration = sslConfiguration.toConfiguration()
         ) ?: EtcdServerConfiguration(
-            hosts,
+            EtcdServerHosts.create(hosts),
             username,
             labelText,
             EtcdTimeoutConfiguration(duration),

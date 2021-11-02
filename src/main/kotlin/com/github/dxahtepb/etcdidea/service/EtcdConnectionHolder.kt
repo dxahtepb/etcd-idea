@@ -12,7 +12,7 @@ class EtcdConnectionHolder(configuration: EtcdServerConfiguration) : AutoCloseab
 
     init {
         client = Client.builder()
-            .endpoints(configuration.hosts)
+            .endpoints(configuration.hosts.asURIs())
             .retryMaxDuration(configuration.timeouts.applicationTimeout)
             .keepaliveWithoutCalls(false)
             .let { builder ->

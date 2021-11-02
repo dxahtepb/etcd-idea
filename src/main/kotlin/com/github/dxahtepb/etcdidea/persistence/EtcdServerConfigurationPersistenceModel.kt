@@ -1,6 +1,7 @@
 package com.github.dxahtepb.etcdidea.persistence
 
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
+import com.github.dxahtepb.etcdidea.model.EtcdServerHosts
 import com.github.dxahtepb.etcdidea.model.EtcdSslConfiguration
 import com.github.dxahtepb.etcdidea.model.EtcdTimeoutConfiguration
 import com.intellij.openapi.components.BaseState
@@ -20,7 +21,7 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
     companion object Converter {
         fun toConfiguration(stored: EtcdServerConfigurationPersistenceModel) =
             EtcdServerConfiguration(
-                stored.hosts.orEmpty(),
+                EtcdServerHosts.create(stored.hosts.orEmpty()),
                 stored.user.orEmpty(),
                 stored.label.orEmpty(),
                 id = stored.id.orEmpty(),
@@ -36,7 +37,7 @@ class EtcdServerConfigurationPersistenceModel : BaseState() {
         fun fromConfiguration(conf: EtcdServerConfiguration) =
             EtcdServerConfigurationPersistenceModel().apply {
                 id = conf.id
-                hosts = conf.hosts
+                hosts = conf.hosts.asString()
                 label = conf.label
                 user = conf.user
                 isSslEnabled = conf.sslConfiguration.sslEnabled

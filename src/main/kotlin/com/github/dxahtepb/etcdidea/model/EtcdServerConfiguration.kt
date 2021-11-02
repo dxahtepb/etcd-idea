@@ -5,18 +5,27 @@ import io.etcd.jetcd.Util
 import java.net.URI
 
 data class EtcdServerConfiguration(
-    val hosts: String,
+    val hosts: EtcdServerHosts,
     val user: String,
     val label: String,
     val timeouts: EtcdTimeoutConfiguration,
     val sslConfiguration: EtcdSslConfiguration = EtcdSslConfiguration(),
     val id: String = generateNewUniqueId()
 ) {
-    fun toURIs(): List<URI> = Util.toURIs(hosts.split(";"))
     override fun toString(): String = "$label@$hosts"
 
     companion object {
         @JvmStatic
         fun generateNewUniqueId() = UUID.randomUUID().toString()
+    }
+}
+
+data class EtcdServerHosts(private val hosts: List<URI>) {
+    fun asString() = toString()
+    fun asURIs() = hosts
+    override fun toString(): String = hosts.joinToString(";")
+
+    companion object {
+        fun create(hostsString: String) = EtcdServerHosts(Util.toURIs(hostsString.split(";")))
     }
 }
