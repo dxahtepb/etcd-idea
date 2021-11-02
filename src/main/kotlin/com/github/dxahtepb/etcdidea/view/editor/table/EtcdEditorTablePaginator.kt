@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.view.editor.table
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.github.dxahtepb.etcdidea.view.addCenter
 import com.github.dxahtepb.etcdidea.view.addLineEnd
 import com.github.dxahtepb.etcdidea.view.addLineStart
@@ -85,9 +86,12 @@ class EtcdEditorTablePaginator(table: JTable) : JPanel(BorderLayout()) {
         if (currentPageChanging) return
         currentPageChanging = true
         val skippedRows = tableModel.pageOffset * tableModel.pageSize
-        label.text =
-            """${skippedRows + 1}-${skippedRows + tableModel.rowCount}
-                | of ${tableModel.getRealRowCount()}""".trimMargin()
+        label.text = EtcdBundle.getMessage(
+            "editor.pagination.rowsShown",
+            skippedRows + 1,
+            skippedRows + tableModel.rowCount,
+            tableModel.getRealRowCount()
+        )
         currentPageChanging = false
     }
 

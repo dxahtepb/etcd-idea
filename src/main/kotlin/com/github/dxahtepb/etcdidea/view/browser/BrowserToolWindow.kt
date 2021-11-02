@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.github.dxahtepb.etcdidea.UI_DISPATCHER
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.persistence.EtcdConfigurationStateComponent
@@ -7,14 +8,15 @@ import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
-import com.github.dxahtepb.etcdidea.view.*
+import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
+import com.github.dxahtepb.etcdidea.view.addCenter
+import com.github.dxahtepb.etcdidea.view.addNorth
 import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.CheckHealthAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
 import com.github.dxahtepb.etcdidea.view.browser.actions.EditServerAction
-import com.intellij.notification.Notification
-import com.intellij.notification.NotificationType
-import com.intellij.notification.Notifications
+import com.github.dxahtepb.etcdidea.view.getScrollComponent
+import com.github.dxahtepb.etcdidea.view.withNoBorder
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -90,7 +92,7 @@ class BrowserToolWindow(
         myTree = Tree(treeModel).apply {
             isEditable = false
             isRootVisible = false
-            emptyText.text = "Add server configuration"
+            emptyText.text = EtcdBundle.getMessage("browser.toolwindow.configurationsEmptyText")
             selectionModel.selectionMode = SINGLE_TREE_SELECTION
         }
 
@@ -160,25 +162,7 @@ class BrowserToolWindow(
         val configuration = selected.userObject as EtcdServerConfiguration
         GlobalScope.launch(UI_DISPATCHER) {
             etcdService.getAllAlarms(configuration)?.let { alarms ->
-                if (alarms.alarms.isEmpty()) {
-                    Notifications.Bus.notify(
-                        Notification(
-                            "Etcd Browser",
-                            "Etcd health check",
-                            "Etcd cluster has no raised alarms",
-                            NotificationType.INFORMATION
-                        )
-                    )
-                } else {
-                    Notifications.Bus.notify(
-                        Notification(
-                            "Etcd Browser",
-                            "Etcd health check",
-                            "Etcd cluster has ${alarms.alarms.size} alarms",
-                            NotificationType.WARNING
-                        )
-                    )
-                }
+                AlarmsPostProcessor(alarms).process()
             }
         }
     }

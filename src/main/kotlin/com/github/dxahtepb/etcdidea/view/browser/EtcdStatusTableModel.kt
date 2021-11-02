@@ -1,10 +1,16 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.github.dxahtepb.etcdidea.model.EtcdMemberStatus
 import java.util.Vector
 import javax.swing.table.DefaultTableModel
 
-private val COLUMNS = Vector(listOf("property", "value"))
+private val COLUMNS = Vector(
+    listOf(
+        EtcdBundle.getMessage("browser.toolwindow.stats.property"),
+        EtcdBundle.getMessage("browser.toolwindow.stats.value")
+    )
+)
 
 class EtcdStatusTableModel : DefaultTableModel() {
     fun setDataVector(status: EtcdMemberStatus) {

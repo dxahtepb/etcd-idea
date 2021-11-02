@@ -22,6 +22,7 @@ suspend fun <T> Deferred<T>.await(timeout: Duration, defaultValue: T) =
     withTimeoutOrNull(timeout.toMillis()) { await() } ?: defaultValue
 
 suspend fun <T> Deferred<T>.awaitOrThrow(timeout: Duration) =
-    withTimeoutOrNull(timeout.toMillis()) { await() } ?: throw AwaitTimeoutException()
+    withTimeoutOrNull(timeout.toMillis()) { await() } ?: throw EtcdAwaitTimeoutException()
 
-class AwaitTimeoutException : Exception("Cannot connect to the etcd service")
+open class AwaitTimeoutException(message: String) : Exception(message)
+class EtcdAwaitTimeoutException : AwaitTimeoutException("Cannot connect to the etcd service")

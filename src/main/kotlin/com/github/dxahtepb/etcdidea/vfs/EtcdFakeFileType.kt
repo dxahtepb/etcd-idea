@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.vfs
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.intellij.openapi.fileTypes.ex.FakeFileType
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.vfs.VirtualFile
@@ -12,7 +13,7 @@ object EtcdFakeFileType : FakeFileType() {
 
     override fun getName() = "ETCD"
 
-    override fun getDescription() = "ETCD key-value store"
+    override fun getDescription() = EtcdBundle.getMessage("filesystem.file.description")
 
     override fun isMyFileType(file: VirtualFile) = file is EtcdDummyVirtualFile
 }

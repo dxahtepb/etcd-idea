@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.view.editor
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.github.dxahtepb.etcdidea.invokeLaterOnEdt
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.github.dxahtepb.etcdidea.model.EtcdKvRevisions
@@ -8,7 +9,11 @@ import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.service.EtcdWatcherHolder
 import com.github.dxahtepb.etcdidea.uiDispatcher
-import com.github.dxahtepb.etcdidea.view.*
+import com.github.dxahtepb.etcdidea.view.addCenter
+import com.github.dxahtepb.etcdidea.view.addNorth
+import com.github.dxahtepb.etcdidea.view.gridConstraints
+import com.github.dxahtepb.etcdidea.view.leftAlignedLabel
+import com.github.dxahtepb.etcdidea.view.textField
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -20,10 +25,11 @@ import com.intellij.ui.table.JBTable
 import com.intellij.uiDesigner.core.GridLayoutManager
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.NonNls
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
-import java.util.*
+import java.util.Vector
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -46,8 +52,8 @@ class EditKeyDialogWindow(
     private var modalityState: ModalityState
 
     init {
-        title = "Edit Key"
-        setOKButtonText("Submit")
+        title = EtcdBundle.getMessage("editor.kv.dialog.edit.title")
+        setOKButtonText(EtcdBundle.getMessage("editor.kv.dialog.edit.submit"))
         super.init()
         modalityState = ModalityState.current()
     }
@@ -66,10 +72,16 @@ class EditKeyDialogWindow(
         valueField = JBTextField(keyValue.value, TEXT_FIELD_SIZE)
 
         return JPanel(GridLayoutManager(2, 2)).apply {
-            add(JBLabel("Key:").apply { isEnabled = false }, gridConstraints(0, 0).leftAlignedLabel())
+            add(
+                JBLabel(EtcdBundle.getMessage("editor.kv.dialog.edit.key")).apply { isEnabled = false },
+                gridConstraints(0, 0).leftAlignedLabel()
+            )
             add(keyField, gridConstraints(0, 1).textField())
 
-            add(JBLabel("Value:"), gridConstraints(1, 0).leftAlignedLabel())
+            add(
+                JBLabel(EtcdBundle.getMessage("editor.kv.dialog.edit.value")),
+                gridConstraints(1, 0).leftAlignedLabel()
+            )
             add(valueField, gridConstraints(1, 1).textField())
         }
     }
@@ -80,7 +92,7 @@ class EditKeyDialogWindow(
             isVisible = false
         }
         return JPanel(BorderLayout()).apply {
-            val loadButton = JButton("Load Revisions").apply {
+            val loadButton = JButton(EtcdBundle.getMessage("editor.kv.dialog.edit.loadRevisions")).apply {
                 addActionListener {
                     watcher?.close()
                     revisionsTableModel.clear()
@@ -93,9 +105,9 @@ class EditKeyDialogWindow(
                                 }
                             }
                         startRevisionLabel.text = if (watcher != null) {
-                            "Least revision shown: ${watcher?.startRevision}"
+                            EtcdBundle.getMessage("editor.kv.dialog.edit.leastRevision", watcher?.startRevision)
                         } else {
-                            "Error while loading revisions"
+                            EtcdBundle.getMessage("editor.kv.dialog.edit.revisionsError")
                         }
                         startRevisionLabel.isVisible = true
                     }
@@ -109,7 +121,7 @@ class EditKeyDialogWindow(
             )
 
             val revisionsTable = JBTable(revisionsTableModel).apply {
-                emptyText.text = "Press \"Load Revisions\" to see historical revisions"
+                emptyText.text = EtcdBundle.getMessage("editor.kv.dialog.edit.revisions.emptyText")
                 dragEnabled = false
                 tableHeader.reorderingAllowed = false
                 columnSelectionAllowed = false
@@ -126,7 +138,7 @@ class EditKeyDialogWindow(
 
     override fun doValidate(): ValidationInfo? {
         if (keyField.text == "") {
-            return ValidationInfo("Key should not be empty", keyField)
+            return ValidationInfo(EtcdBundle.getMessage("editor.kv.dialog.edit.validation.keyIsEmpty"), keyField)
         }
         return null
     }
@@ -170,5 +182,5 @@ private class RevisionsTableModel : DefaultTableModel(Vector<Vector<String>>(), 
 
     private fun toColumn(rev: EtcdRevisionInfo) = Vector(columnsModel.map { it.extractor(rev) })
 
-    data class ColumnDescriptor(val name: String, val extractor: (rev: EtcdRevisionInfo) -> String)
+    data class ColumnDescriptor(@NonNls val name: String, val extractor: (rev: EtcdRevisionInfo) -> String)
 }

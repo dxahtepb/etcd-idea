@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.view.browser
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.github.dxahtepb.etcdidea.model.EtcdServerConfiguration
 import com.github.dxahtepb.etcdidea.model.EtcdServerHosts
 import com.github.dxahtepb.etcdidea.model.EtcdTimeoutConfiguration
@@ -52,16 +53,16 @@ class ConfigureServerDialogWindow(
 
     init {
         super.init()
-        title = "Add Server Configuration"
+        title = EtcdBundle.getMessage("browser.configuration.dialogTitle")
     }
 
     override fun createCenterPanel(): JComponent {
         val tabbedPanel = JBTabbedPane().apply {
-            addTab("General", createGeneralTab())
-            addTab("SSL", createSslTab())
+            addTab(EtcdBundle.getMessage("browser.configuration.tab.general"), createGeneralTab())
+            addTab(EtcdBundle.getMessage("browser.configuration.tab.ssl"), createSslTab())
         }
         dialogPanel = panel {
-            row("Label:") { textField(::labelText, 20) }
+            row(EtcdBundle.getMessage("browser.configuration.field.label")) { textField(::labelText, 20) }
             row { tabbedPanel() }
         }
         return dialogPanel
@@ -69,9 +70,9 @@ class ConfigureServerDialogWindow(
 
     private fun createGeneralTab(): DialogPanel {
         generalPanel = panel {
-            row("Hosts:") { textField(::hosts) }
-            row("User:") { textField(::username) }
-            row("Password:") {
+            row(EtcdBundle.getMessage("browser.configuration.general.field.hosts")) { textField(::hosts) }
+            row(EtcdBundle.getMessage("browser.configuration.general.field.user")) { textField(::username) }
+            row(EtcdBundle.getMessage("browser.configuration.general.field.password")) {
                 passwordUi = JBPasswordField().apply {
                     oldConfiguration?.let {
                         val hasPassword = credentialsService.getPassword(PasswordKey(it.id)) != null
@@ -80,10 +81,10 @@ class ConfigureServerDialogWindow(
                 }
                 passwordUi(growX, pushX)
             }
-            row("Timeout:") {
+            row(EtcdBundle.getMessage("browser.configuration.general.field.timeout")) {
                 cell {
                     timeoutField = intTextField(::timeoutMillis, 10).component
-                    commentNoWrap("ms")
+                    commentNoWrap(EtcdBundle.getMessage("browser.configuration.general.field.timeout.ms"))
                 }
             }
         }
@@ -93,20 +94,31 @@ class ConfigureServerDialogWindow(
     private fun createSslTab(): DialogPanel {
         sslPanel = panel {
             row {
-                checkBox("Enable SSL", sslConfiguration::sslEnabled).also {
+                checkBox(
+                    EtcdBundle.getMessage("browser.configuration.ssl.field.isEnableSsl"),
+                    sslConfiguration::sslEnabled
+                ).also {
                     isSslEnabled = it.component
                 }
             }
-            row("CA File:") {
-                textFieldWithBrowseButton(sslConfiguration::rootCertificate, "Choose CA Certificate:", project)
+            row(EtcdBundle.getMessage("browser.configuration.ssl.field.caFile")) {
+                textFieldWithBrowseButton(
+                    sslConfiguration::rootCertificate,
+                    EtcdBundle.getMessage("browser.configuration.ssl.field.caFile.dialog"),
+                    project
+                )
             }.enableIfSsl()
-            row("Client Key File:") {
-                textFieldWithBrowseButton(sslConfiguration::clientKey, "Choose Client Key:", project)
+            row(EtcdBundle.getMessage("browser.configuration.ssl.field.clientKeyFile")) {
+                textFieldWithBrowseButton(
+                    sslConfiguration::clientKey,
+                    EtcdBundle.getMessage("browser.configuration.ssl.field.clientKeyFile.dialog"),
+                    project
+                )
             }.enableIfSsl()
-            row("Client Certificate File:") {
+            row(EtcdBundle.getMessage("browser.configuration.ssl.field.clientCertificateFile")) {
                 textFieldWithBrowseButton(
                     sslConfiguration::clientKeyChain,
-                    "Choose Client Certificate:",
+                    EtcdBundle.getMessage("browser.configuration.ssl.field.clientCertificateFile.dialog"),
                     project
                 )
             }.enableIfSsl()
@@ -118,7 +130,7 @@ class ConfigureServerDialogWindow(
         generalPanel.apply()
         dialogPanel.apply()
         if (timeoutMillis <= 0) {
-            return ValidationInfo("Please enter a valid timeout", timeoutField)
+            return ValidationInfo(EtcdBundle.getMessage("browser.configuration.validation.timeout.fail"), timeoutField)
         }
         return null
     }

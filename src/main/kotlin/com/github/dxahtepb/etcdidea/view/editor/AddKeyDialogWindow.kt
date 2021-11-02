@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.view.editor
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.github.dxahtepb.etcdidea.model.EtcdKeyValue
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
@@ -21,8 +22,8 @@ class AddKeyDialogWindow(
     private lateinit var keyField: JBTextField
 
     init {
-        title = "Add Key"
-        setOKButtonText("Submit")
+        title = EtcdBundle.getMessage("editor.kv.dialog.add.title")
+        setOKButtonText(EtcdBundle.getMessage("editor.kv.dialog.add.submit"))
         super.init()
     }
 
@@ -39,7 +40,7 @@ class AddKeyDialogWindow(
     override fun doValidate(): ValidationInfo? {
         dialogPanel.apply()
         if (key == "") {
-            return ValidationInfo("Key should not be empty", keyField)
+            return ValidationInfo(EtcdBundle.getMessage("editor.kv.dialog.add.validation.keyIsEmpty"), keyField)
         }
         return null
     }

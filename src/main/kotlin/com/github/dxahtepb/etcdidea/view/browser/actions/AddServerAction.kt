@@ -1,12 +1,17 @@
 package com.github.dxahtepb.etcdidea.view.browser.actions
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.github.dxahtepb.etcdidea.view.browser.ConfigureServerDialogWindow
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 
 class AddServerAction :
-    AnAction("Add Etcd Server", "Add Etcd server", AllIcons.General.Add) {
+    AnAction(
+        EtcdBundle.getMessage("browser.action.addServer.text"),
+        EtcdBundle.getMessage("browser.action.addServer.description"),
+        AllIcons.General.Add
+    ) {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return

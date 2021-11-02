@@ -1,5 +1,6 @@
 package com.github.dxahtepb.etcdidea.service
 
+import com.github.dxahtepb.etcdidea.EtcdBundle
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
@@ -41,8 +42,8 @@ internal val notificationErrorSink = { e: Throwable ->
         Notifications.Bus.notify(
             Notification(
                 "Etcd Browser",
-                "Etcd error",
-                cause.message ?: "${e.message}: Unknown error",
+                EtcdBundle.getMessage("service.errorSink.notification.title"),
+                cause.message ?: EtcdBundle.getMessage("service.errorSink.notification.unknownMessage", e.message),
                 NotificationType.ERROR
             )
         )
