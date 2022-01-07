@@ -8,15 +8,10 @@ import com.github.dxahtepb.etcdidea.service.EtcdService
 import com.github.dxahtepb.etcdidea.service.auth.CredentialsService
 import com.github.dxahtepb.etcdidea.service.auth.PasswordKey
 import com.github.dxahtepb.etcdidea.vfs.EtcdDummyVirtualFile
-import com.github.dxahtepb.etcdidea.view.SingleSelectionTable
-import com.github.dxahtepb.etcdidea.view.addCenter
-import com.github.dxahtepb.etcdidea.view.addNorth
-import com.github.dxahtepb.etcdidea.view.browser.actions.AddServerAction
-import com.github.dxahtepb.etcdidea.view.browser.actions.CheckHealthAction
-import com.github.dxahtepb.etcdidea.view.browser.actions.DeleteServerAction
-import com.github.dxahtepb.etcdidea.view.browser.actions.EditServerAction
-import com.github.dxahtepb.etcdidea.view.getScrollComponent
-import com.github.dxahtepb.etcdidea.view.withNoBorder
+import com.github.dxahtepb.etcdidea.view.*
+import com.github.dxahtepb.etcdidea.view.browser.actions.*
+import com.github.dxahtepb.etcdidea.view.browser.model.EtcdBrowserTreeNode
+import com.github.dxahtepb.etcdidea.view.browser.model.EtcdBrowserTreeNodeUserObject
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -36,7 +31,6 @@ import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JTree
-import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
 import javax.swing.tree.TreeSelectionModel.SINGLE_TREE_SELECTION
@@ -76,6 +70,7 @@ class BrowserToolWindow(
             addSeparator()
             add(EditServerAction())
             add(CheckHealthAction())
+            add(WatchStatsToggleAction())
         }
         return JPanel(BorderLayout()).apply {
             addCenter(
@@ -88,7 +83,7 @@ class BrowserToolWindow(
     }
 
     private fun createTreePanel(): JComponent {
-        treeModel = DefaultTreeModel(DefaultMutableTreeNode())
+        treeModel = DefaultTreeModel(EtcdBrowserTreeNode())
         myTree = Tree(treeModel).apply {
             isEditable = false
             isRootVisible = false
@@ -100,7 +95,7 @@ class BrowserToolWindow(
             @SuppressWarnings("ReturnCount")
             override fun onDoubleClick(event: MouseEvent): Boolean {
                 if (event.source !is JTree || !isTreeSelected()) return false
-                val configuration = getCurrentConnection() ?: return false
+                val configuration = getCurrentConfiguration()?.etcdServerConfiguration ?: return false
                 FileEditorManager.getInstance(project)
                     .openFile(EtcdDummyVirtualFile(configuration), true)
                 return true
@@ -123,11 +118,9 @@ class BrowserToolWindow(
         }.let { myTree.addMouseListener(it) }
 
         myTree.selectionModel.addTreeSelectionListener {
-            val selectedConfiguration = getCurrentConnection()
+            val selectedConfiguration = getSelectedTreeNode()?.userObject as? EtcdBrowserTreeNodeUserObject
             clearStatsTable()
-            if (selectedConfiguration != null) {
-                updateStatsTable(selectedConfiguration)
-            }
+            updateStatsTable(selectedConfiguration)
         }
 
         return JPanel(BorderLayout()).apply {
@@ -136,8 +129,9 @@ class BrowserToolWindow(
     }
 
     private fun addConfigurationToTree(configuration: EtcdServerConfiguration) {
-        val childNode = DefaultMutableTreeNode(configuration, false)
-        val root = treeModel.root as DefaultMutableTreeNode
+        val nodeUserObject = EtcdBrowserTreeNodeUserObject(configuration)
+        val childNode = EtcdBrowserTreeNode(nodeUserObject, false)
+        val root = treeModel.root as EtcdBrowserTreeNode
         treeModel.insertNodeInto(childNode, root, root.childCount)
         myTree.scrollPathToVisible(TreePath(childNode.path))
     }
@@ -150,33 +144,44 @@ class BrowserToolWindow(
     }
 
     internal fun deleteSelectedConfiguration() {
-        val nodeToRemove = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
-        val configuration = nodeToRemove.userObject as EtcdServerConfiguration
+        val nodeToRemove = getSelectedTreeNode() ?: return
+        val userObject = nodeToRemove.userObject as EtcdBrowserTreeNodeUserObject
+        val configuration = userObject.etcdServerConfiguration
         treeModel.removeNodeFromParent(nodeToRemove)
         etcdState.removeConfiguration(configuration)
         CredentialsService.instance.forgetPassword(PasswordKey(configuration.id))
     }
 
     internal fun checkHealthSelectedConfiguration() {
-        val selected = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
-        val configuration = selected.userObject as EtcdServerConfiguration
+        val configuration = getCurrentConfiguration() ?: return
         GlobalScope.launch(UI_DISPATCHER) {
-            etcdService.getAllAlarms(configuration)?.let { alarms ->
+            etcdService.getAllAlarms(configuration.etcdServerConfiguration)?.let { alarms ->
                 AlarmsPostProcessor(alarms).process()
             }
         }
     }
 
     internal fun editSelectedConfiguration() {
-        val nodeToEdit = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
-        val oldConfiguration = nodeToEdit.userObject as EtcdServerConfiguration
+        val nodeToEdit = getSelectedTreeNode() ?: return
+        val oldConfiguration = nodeToEdit.userObject as EtcdBrowserTreeNodeUserObject
 
-        val configurationDialog = ConfigureServerDialogWindow(project, oldConfiguration)
+        val configurationDialog = ConfigureServerDialogWindow(project, oldConfiguration.etcdServerConfiguration)
         if (configurationDialog.showAndGet()) {
             val newConfiguration = configurationDialog.getConfiguration()
             etcdState.upsertConfiguration(newConfiguration)
-            nodeToEdit.userObject = newConfiguration
+            nodeToEdit.userObject = oldConfiguration.copy(etcdServerConfiguration = newConfiguration)
         }
+    }
+
+    internal fun toggleWatchServerStatistics() {
+        val nodeToEdit = getSelectedTreeNode() ?: return
+        val oldConfiguration = nodeToEdit.userObject as EtcdBrowserTreeNodeUserObject
+        nodeToEdit.userObject = oldConfiguration.copy(isWatchStatistics = !oldConfiguration.isWatchStatistics)
+        updateStatsTable(getCurrentConfiguration())
+    }
+
+    internal fun isWatchServerStatisticsEnabled(): Boolean {
+        return getCurrentConfiguration()?.isWatchStatistics ?: false
     }
 
     private fun createTablePanel(): JComponent {
@@ -186,10 +191,14 @@ class BrowserToolWindow(
         }
     }
 
-    private fun updateStatsTable(configuration: EtcdServerConfiguration) {
-        GlobalScope.launch(UI_DISPATCHER) {
-            etcdService.getMemberStatus(configuration)?.let {
-                statsModel.setDataVector(it)
+    private fun updateStatsTable(configuration: EtcdBrowserTreeNodeUserObject?) {
+        if (configuration?.isWatchStatistics != true) {
+            clearStatsTable()
+        } else {
+            GlobalScope.launch(UI_DISPATCHER) {
+                etcdService.getMemberStatus(configuration.etcdServerConfiguration)?.let {
+                    statsModel.setDataVector(it)
+                }
             }
         }
     }
@@ -200,9 +209,10 @@ class BrowserToolWindow(
         }
     }
 
-    private fun getCurrentConnection(): EtcdServerConfiguration? {
-        val node = myTree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode
-        return node?.userObject as? EtcdServerConfiguration
+    private fun getSelectedTreeNode() = myTree.selectionPath?.lastPathComponent as? EtcdBrowserTreeNode
+
+    private fun getCurrentConfiguration(): EtcdBrowserTreeNodeUserObject? {
+        return getSelectedTreeNode()?.userObject as? EtcdBrowserTreeNodeUserObject
     }
 
     private fun fillServers() {
